@@ -1,0 +1,36 @@
+name:               cycle-roll
+version:            0.0.1
+license:            GPL-3
+license-file:       LICENSE
+author:             anthony cantor
+maintainer:         anthony cantor
+copyright:          (c) 2013 anthony cantor
+synopsis:           pattern match cycles in data
+description:        compress the cycles into cycle rolls.
+cabal-version:      >=1.8
+build-type:         Simple
+
+library
+  hs-source-dirs:   src
+  exposed-modules:  Data.CycleRoll
+  other-modules:    Data.CycleRoll.LCP
+  build-depends:    
+    base,
+    vector,
+    suffixarray
+  ghc-options:      -Wall
+                    -O2
+
+test-suite tests
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test, src
+  main-is:          MainTestSuite.hs
+  build-depends:    
+    base,
+    vector,
+    suffixarray,
+    HUnit,
+    QuickCheck,
+    test-framework,
+    test-framework-hunit,
+    test-framework-quickcheck2
