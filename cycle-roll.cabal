@@ -13,13 +13,16 @@ build-type:         Simple
 library
   hs-source-dirs:   src
   exposed-modules:  Data.CycleRoll
-  other-modules:    Data.CycleRoll.LCP
+  other-modules:    
+    Data.CycleRoll.LCP
+    Data.CycleRoll.SuffixArray
   build-depends:    
     base,
     vector,
     suffixarray
-  ghc-options:      -Wall
-                    -O2
+  ghc-options:      
+    -Wall
+    -O2
 
 test-suite tests
   type:             exitcode-stdio-1.0
