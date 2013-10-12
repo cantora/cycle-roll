@@ -1,8 +1,11 @@
 module Data.CycleRoll.LCP where
 
 import Prelude hiding (
-  null, head, tail, length, drop
+  null, head, tail, length
   )
+
+import qualified Data.CycleRoll.SuffixArray as SA
+
 import Data.Vector.Unboxed hiding (find)
 import qualified Data.Vector.Algorithms.Intro as ISort
 import qualified Control.Monad.ST as ST
@@ -20,10 +23,8 @@ array v suf_arr
   | length suf_arr <= 1     = fromList []
   | otherwise               = next_lcp `cons` array v (tail suf_arr)
   where
-    suffix idx 
-      | idx == 0   = v
-      | otherwise  = drop idx v
-    next_lcp = find (suffix (suf_arr!0)) (suffix (suf_arr!1))
+    suffix idx = SA.entry idx v suf_arr
+    next_lcp = find (suffix 0) (suffix 1)
 
 sort_array :: Vector Int -> Vector Int
 sort_array v = ST.runST $ do

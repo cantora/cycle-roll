@@ -3,7 +3,7 @@ module Data.CycleRoll.LCPTest (
   ) where
 
 import Prelude hiding (
-  length, (++), drop, null, head, tail
+  length, (++), null, head, tail
   )
 import qualified Data.CycleRoll.LCP as LCP
 import qualified Data.CycleRoll.SuffixArray as SA
@@ -101,8 +101,8 @@ array_group =
           | null la   = True
           | otherwise = ((LCP.find s1 s2) == head la) && check (tail la) (n+1)
           where 
-            s1 = drop (suf_arr!n) v
-            s2 = drop (suf_arr!(n+1)) v
+            s1 = SA.entry n v suf_arr
+            s2 = SA.entry (n+1) v suf_arr
 
 sort_array_group = 
   testGroup "sort_array" [

@@ -2,9 +2,6 @@ module Data.CycleRoll.SuffixArrayTest (
   group
   ) where
 
-import Prelude hiding (
-  length, (++), drop, null, head, tail
-  )
 import qualified Data.CycleRoll.SuffixArray as SA
 import Data.Vector.Unboxed
 import Test.Framework

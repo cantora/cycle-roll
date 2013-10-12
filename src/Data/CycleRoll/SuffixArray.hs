@@ -1,6 +1,7 @@
 module Data.CycleRoll.SuffixArray (
   fromList,
-  make
+  make,
+  entry
   ) where
 
 import qualified Data.SuffixArray as SA
@@ -16,3 +17,6 @@ make v =
   GV.convert $ get_sa $ SA.suffixArray $ GV.convert v
   where
     get_sa (SA.SuffixArray _ sa) = sa
+
+entry :: (UV.Unbox a) => Int -> UV.Vector a -> UV.Vector Int -> UV.Vector a
+entry idx v sa = UV.drop (sa UV.! idx) v
