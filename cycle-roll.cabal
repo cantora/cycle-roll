@@ -19,6 +19,7 @@ library
   build-depends:    
     base,
     vector,
+    vector-algorithms,
     suffixarray
   ghc-options:      
     -Wall
@@ -31,6 +32,7 @@ test-suite tests
   build-depends:    
     base,
     vector,
+    vector-algorithms,
     suffixarray,
     HUnit,
     QuickCheck,

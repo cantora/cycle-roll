@@ -18,11 +18,22 @@ import qualified Data.List as List
 group = 
   testGroup "LCP" [
     find_group,
-    array_group
+    array_group,
+    sort_array_group
     ]
 
 instance (Arbitrary a, Unbox a) => Arbitrary (Vector a) where
   arbitrary    = fmap fromList arbitrary
+
+newtype NonEmptyVector a = 
+  NonEmptyVector { getNonEmptyVector :: Vector a }
+  deriving (Show)
+
+fromNonEmptyList :: (Unbox a) => NonEmptyList a -> NonEmptyVector a
+fromNonEmptyList (NonEmpty xs) = NonEmptyVector $ fromList xs
+
+instance (Arbitrary a, Unbox a) => Arbitrary (NonEmptyVector a) where
+  arbitrary    = fmap fromNonEmptyList arbitrary
 
 find_group = 
   testGroup "find" [
@@ -55,19 +66,17 @@ array_group =
     testProperty      "lcps are correct"          prop_lcp
     ]
   where
-    prop_len :: NonEmptyList Char -> Bool
-    prop_len (NonEmpty xs) =
+    prop_len :: NonEmptyVector Char -> Bool
+    prop_len (NonEmptyVector v) =
       lcp_arr_len == length suf_arr - 1
       where
-        v             = fromList xs
         suf_arr       = SA.make v
         lcp_arr_len   = length $ LCP.array v suf_arr
 
-    prop_lcp :: NonEmptyList Char -> NonEmptyList Char -> Bool
-    prop_lcp (NonEmpty xs1) (NonEmpty xs2) =
+    prop_lcp :: NonEmptyVector Char -> Bool
+    prop_lcp (NonEmptyVector v) =
 	  check lcp_arr 0
       where
-        v         = SA.fromList $ xs1 List.++ xs2 -- ensures (length lcp_arr) > 0
         suf_arr   = SA.make v
         lcp_arr   = LCP.array v suf_arr
         check la n 
@@ -76,3 +85,15 @@ array_group =
           where 
             s1 = drop (suf_arr!n) v
             s2 = drop (suf_arr!(n+1)) v
+
+sort_array_group = 
+  testGroup "sort_array" [
+    testProperty     "sorted"        prop_sorted
+    ]
+  where
+    prop_sorted :: NonEmptyVector Char -> Bool
+    prop_sorted (NonEmptyVector v) = 
+      toList sorted == (List.sort $ toList lcp_arr)
+      where
+        lcp_arr   = LCP.array v $ SA.make v
+        sorted    = LCP.sort_array lcp_arr
