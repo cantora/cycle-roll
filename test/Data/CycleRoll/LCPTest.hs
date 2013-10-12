@@ -11,6 +11,8 @@ import Data.Vector.Unboxed
 import Test.QuickCheck
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
+import Test.Framework.Providers.HUnit
+import Test.HUnit
 import Data.Ix
 import qualified Data.List as List
 
@@ -37,13 +39,18 @@ instance (Arbitrary a, Unbox a) => Arbitrary (NonEmptyVector a) where
 
 find_group = 
   testGroup "find" [
+    testCase          "find sanity"                 find_sanity,
     testProperty      "duplicate argument"          prop_dup_arg,
     testProperty      "empty right arg"             prop_empty1,
     testProperty      "empty left arg"              prop_empty2,
     testProperty      "prefix 1"                    prop_prefix1,
-    testProperty      "prefix 2"                    prop_prefix2
+    testProperty      "prefix 2"                    prop_prefix2,
+    testProperty      "prefix 3"                    prop_prefix3
     ]
   where
+    find_sanity = 
+      9 @=? LCP.find (fromList "this is a prefix") (fromList "this is another prefix")
+
     prop_dup_arg :: Vector Char -> Bool
     prop_dup_arg s = (LCP.find s s) == length s
 
@@ -59,13 +66,24 @@ find_group =
     prop_prefix2 :: Vector Char -> Vector Char -> Bool
     prop_prefix2 s1 s2 = (LCP.find (s1 ++ s2) s1) == length s1
 
+    prop_prefix3 :: Vector Char -> Vector Char -> Vector Char -> Bool
+    prop_prefix3 s1 s2 s3 = (LCP.find (s1 ++ s2) (s1 ++ s3)) == ((length s1) + (LCP.find s2 s3))
+
 
 array_group =
   testGroup "array" [
+    testCase          "array sanity"              array_sanity,
     testProperty      "lcp array length"          prop_len,
     testProperty      "lcps are correct"          prop_lcp
     ]
   where
+    --suffix array for banana => [5,3,1,0,4,2] -> [a, ana, anana, banana, na, nana]
+    --lcp array for banana => [1, 3, 0, 0, 2]
+    array_sanity =
+      (fromList [1,3,0,0,2]) @=? (LCP.array v $ SA.make v)
+      where
+        v = fromList "banana"
+
     prop_len :: NonEmptyVector Char -> Bool
     prop_len (NonEmptyVector v) =
       lcp_arr_len == length suf_arr - 1
@@ -88,12 +106,19 @@ array_group =
 
 sort_array_group = 
   testGroup "sort_array" [
+    testCase         "sort sanity"   sort_sanity,
     testProperty     "sorted"        prop_sorted
     ]
   where
+    --sorted lcp array for banana => [3,2,1,0,0]
+    sort_sanity =
+      (fromList [3,2,1,0,0]) @=? (LCP.sort_array $ LCP.array v $ SA.make v)
+      where
+        v = fromList "banana"
+
     prop_sorted :: NonEmptyVector Char -> Bool
     prop_sorted (NonEmptyVector v) = 
-      toList sorted == (List.sort $ toList lcp_arr)
+      toList sorted == (List.sortBy (flip compare) $ toList lcp_arr)
       where
         lcp_arr   = LCP.array v $ SA.make v
         sorted    = LCP.sort_array lcp_arr

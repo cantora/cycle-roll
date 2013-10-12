@@ -10,6 +10,7 @@ import Test.Framework.Providers.QuickCheck2
 import Test.Framework.Providers.HUnit
 
 import Data.CycleRoll.LCPTest as LCPTest
+import Data.CycleRoll.SuffixArrayTest as SATest
 
 main :: IO ()
 main = do
@@ -27,5 +28,6 @@ main = do
 
 tests :: [Test]
 tests = [
+  SATest.group,
   LCPTest.group
   ]

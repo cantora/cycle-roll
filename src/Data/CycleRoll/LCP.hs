@@ -28,7 +28,6 @@ array v suf_arr
 sort_array :: Vector Int -> Vector Int
 sort_array v = ST.runST $ do
   w <- thaw v
-  ISort.sort w
+  ISort.sortBy (flip compare) w
   unsafeFreeze w
 
-  
