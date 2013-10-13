@@ -1,4 +1,3 @@
 module Data.CycleRoll (
-  
   ) where
 

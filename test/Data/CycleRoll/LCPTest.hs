@@ -16,12 +16,11 @@ import Test.HUnit
 import Data.Ix
 import qualified Data.List as List
 
-
 group = 
   testGroup "LCP" [
     find_group,
     array_group,
-    sort_array_group
+    sorted_group
     ]
 
 instance (Arbitrary a, Unbox a) => Arbitrary (Vector a) where
@@ -80,7 +79,7 @@ array_group =
     --suffix array for banana => [5,3,1,0,4,2] -> [a, ana, anana, banana, na, nana]
     --lcp array for banana => [1, 3, 0, 0, 2]
     array_sanity =
-      (fromList [1,3,0,0,2]) @=? (LCP.array v $ SA.make v)
+      (fromList [(1,0),(3,1),(0,2),(0,3),(2,4)]) @=? (LCP.array v $ SA.make v)
       where
         v = fromList "banana"
 
@@ -99,26 +98,27 @@ array_group =
         lcp_arr   = LCP.array v suf_arr
         check la n 
           | null la   = True
-          | otherwise = ((LCP.find s1 s2) == head la) && check (tail la) (n+1)
+          | otherwise = ((LCP.find s1 s2) == fst (head la)) && check (tail la) (n+1)
           where 
             s1 = SA.entry n v suf_arr
             s2 = SA.entry (n+1) v suf_arr
 
-sort_array_group = 
-  testGroup "sort_array" [
+sorted_group = 
+  testGroup "sorted" [
     testCase         "sort sanity"   sort_sanity,
     testProperty     "sorted"        prop_sorted
     ]
   where
     --sorted lcp array for banana => [3,2,1,0,0]
     sort_sanity =
-      (fromList [3,2,1,0,0]) @=? (LCP.sort_array $ LCP.array v $ SA.make v)
+      (fromList [(3,1),(2,4),(1,0),(0,2),(0,3)]) @=? sla
       where
-        v = fromList "banana"
+        v   = fromList "banana"
+        sla = (LCP.sorted $ LCP.array v $ SA.make v)
 
     prop_sorted :: NonEmptyVector Char -> Bool
     prop_sorted (NonEmptyVector v) = 
-      toList sorted == (List.sortBy (flip compare) $ toList lcp_arr)
+      toList sorted == (List.sortBy LCP.compareLCPElement $ toList lcp_arr)
       where
         lcp_arr   = LCP.array v $ SA.make v
-        sorted    = LCP.sort_array lcp_arr
+        sorted    = LCP.sorted lcp_arr
