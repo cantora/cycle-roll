@@ -11,13 +11,14 @@ import Test.Framework.Providers.HUnit
 
 import Data.CycleRoll.LCPTest as LCPTest
 import Data.CycleRoll.SuffixArrayTest as SATest
+import Data.CycleRoll.Test as CycleRollTest
 
 main :: IO ()
 main = do
   let empty_test_opts = mempty :: TestOptions
   let my_test_opts = empty_test_opts {
     --topt_maximum_test_size       = Just 99,
-    topt_maximum_generated_tests = Just 9999
+    topt_maximum_generated_tests = Just 99 --99
   }
   let empty_runner_opts = mempty :: RunnerOptions
   let my_runner_opts = empty_runner_opts {
@@ -29,5 +30,6 @@ main = do
 tests :: [Test]
 tests = [
   SATest.group,
-  LCPTest.group
+  LCPTest.group,
+  CycleRollTest.group
   ]

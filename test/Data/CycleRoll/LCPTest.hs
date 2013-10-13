@@ -7,6 +7,7 @@ import Prelude hiding (
   )
 import qualified Data.CycleRoll.LCP as LCP
 import qualified Data.CycleRoll.SuffixArray as SA
+
 import Data.Vector.Unboxed
 import Test.QuickCheck
 import Test.Framework
@@ -122,3 +123,4 @@ sorted_group =
       where
         lcp_arr   = LCP.array v $ SA.make v
         sorted    = LCP.sorted lcp_arr
+
