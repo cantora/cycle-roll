@@ -22,9 +22,9 @@ library
   hs-source-dirs:   src
   exposed-modules:  
     Data.CycleRoll,
-    Data.CycleRoll.LCP
-  other-modules:    
-    Data.CycleRoll.SuffixArray
+    Data.CycleRoll.LCP,
+    Data.CycleRoll.SuffixArray,
+    Data.CycleRoll.Sequence
   build-depends:    
     base,
     containers,

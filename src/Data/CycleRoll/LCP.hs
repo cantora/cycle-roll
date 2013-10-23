@@ -23,19 +23,6 @@ find v w
   | otherwise         = 0
 
 
-{-
-array :: (Unbox a, Eq a) => Vector a -> Vector Int -> Vector (Int,Int)
-array v suf_arr =
-  array' suf_arr 0
-  where
-    array' sa n
-      | length sa <= 1     = fromList []
-      | otherwise          = (next_lcp, n) `cons` array' (tail sa) (n+1)
-      where
-        suffix = SA.entry v sa
-        next_lcp = find (suffix 0) (suffix 1)
--}
-
 array :: (Unbox a, Eq a) => Vector a -> Vector Int -> Vector Int
 array v suf_arr 
   | sa_len <= 1   = fromList []
@@ -47,20 +34,14 @@ array v suf_arr
       where
         suffix = SA.entry v suf_arr
 
-
-sorted :: Vector (Int,Int) -> Vector (Int,Int)
-sorted v = 
-  ST.runST $ do
-    w <- thaw v
-    ISort.sortBy compareLCPElement w
-    unsafeFreeze w
-
--- compare the lcp value in descending order and the index value
--- in ascending order
-compareLCPElement :: (Int, Int) -> (Int, Int) -> Ordering
-compareLCPElement (lcp1, idx1) (lcp2, idx2) = 
-  (compare lcp2 lcp1) `mappend` (compare idx1 idx2)
-
+rmq :: Vector Int -> Int -> Int -> Int -> Bool
+rmq lcparr idx1 idx2 min_val 
+  | null lcparr    = error "empty lcp array"
+  | idx1 == idx2   = error $ (show idx1) List.++ " = idx1 == idx2 = " List.++ (show idx2)
+  | idx1 < idx2    = not $ List.any rmq_test [idx1..(idx2-1)]
+  | otherwise      = rmq lcparr idx2 idx1 min_val
+  where
+    rmq_test i = lcparr!i < min_val
 
 data GroupElem = 
   GroupElem { 
@@ -94,7 +75,7 @@ groups sarr lcparr
     lcpGroupMap = 
       add_ends_to middle
       where
-        final_idx = (length sarr)-2
+        final_idx = (length sarr)-1
 
         map_append k v map 
           | k < 1     = map -- LCP of zero is not a useful LCP group
@@ -104,7 +85,7 @@ groups sarr lcparr
             new_el = Heap.insert v old_el
 
         add_ends_to map = 
-          map_append (lcparr!0) beg $ map_append (lcparr!final_idx) end map
+          map_append (lcparr!0) beg $ map_append (lcparr!(final_idx-1)) end map
           where
             beg = GroupElem (head sarr) 0
             end = GroupElem (last sarr) final_idx
