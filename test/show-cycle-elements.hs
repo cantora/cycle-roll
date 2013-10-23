@@ -25,12 +25,7 @@ main = do
       where
         show_grps []       = ""
         show_grps (g:grps) =
-          (show_grp g) ++ "\n" ++ (show_grps grps)
-          where
-            show_grp (LCP.Group lcp memb) = 
-              "  " ++ (show lcp) ++ ": " ++ (Foldable.foldr fn "" memb) ++ "\n"
-              where
-                fn (LCP.GroupElem a b) sum = "\n    " ++ (show (a,b)) ++ sum
+          (show g) ++ "\n" ++ (show_grps grps)
                
 
     process str = do
@@ -43,5 +38,5 @@ main = do
 
       putStrLn $ "input: " ++ str
       putStrLn $ "suffixes: " ++ "\nsrc idx | lcp | suffix \n----------------------------" ++ "\n  " ++ (intercalate "\n  " (interleave lcp_strs sufs))
-      putStrLn $ "groups: \n" ++ (show_groups $ LCP.mergedGroups sa lcps)
+      putStrLn $ "groups: \n" ++ (show_groups $ LCP.mergedGroups $ LCP.groups sa lcps)
 

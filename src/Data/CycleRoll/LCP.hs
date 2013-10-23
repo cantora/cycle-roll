@@ -13,6 +13,7 @@ import Data.Monoid
 import qualified Data.List as List
 import qualified Data.Heap as Heap
 import qualified Data.Map as Map
+import qualified Data.Foldable as Foldable
 
 find :: (Eq a, Unbox a, Num b) => Vector a -> Vector a -> b
 find v w
@@ -71,11 +72,17 @@ data Group =
   Group {
     groupLCP :: Int,
     groupMembers :: Heap.Heap GroupElem
-    } deriving (Show, Eq)
+    } deriving (Eq)
 
 --invert compare for Group so Heap will prioritize higher LCP
 instance Ord Group where
   compare a b = (groupLCP b) `compare` (groupLCP a)
+
+instance Show Group where
+  show (Group lcp memb) = 
+    "  " List.++ (show lcp) List.++ ": " List.++ (Foldable.foldr fn "" memb) List.++ "\n"
+    where
+      fn (GroupElem a b) sum = "\n    " List.++ (show (a,b)) List.++ sum
 
 groups :: Vector Int -> Vector Int -> Heap.Heap Group
 groups sarr lcparr 
@@ -111,9 +118,9 @@ groups sarr lcparr
                 lcp = max (lcparr!(sa_idx-1)) $ lcparr!sa_idx
 
 
-mergedGroups :: Vector Int -> Vector Int -> [Group]
-mergedGroups sarr lcparr =
-  recurse Heap.empty [] $ groups sarr lcparr
+mergedGroups :: Heap.Heap Group -> [Group]
+mergedGroups grp_hp =
+  recurse Heap.empty [] grp_hp
   where
     recurse prev_mb base heap 
       | Heap.null heap   = base
