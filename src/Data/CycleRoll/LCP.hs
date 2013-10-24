@@ -1,15 +1,12 @@
 module Data.CycleRoll.LCP where
 
 import Prelude hiding (
-  null, head, tail, length, last
+  null, head, tail, length, last, sum
   )
 
 import qualified Data.CycleRoll.SuffixArray as SA
 
-import Data.Vector.Unboxed hiding (find)
-import qualified Data.Vector.Algorithms.Intro as ISort
-import qualified Control.Monad.ST as ST
-import Data.Monoid
+import Data.Vector.Unboxed hiding (find, sum)
 import qualified Data.List as List
 import qualified Data.Heap as Heap
 import qualified Data.Map as Map
@@ -77,15 +74,15 @@ groups sarr lcparr
       where
         final_idx = (length sarr)-1
 
-        map_append k v map 
-          | k < 1     = map -- LCP of zero is not a useful LCP group
-          | otherwise = Map.insert k new_el map
+        map_append k v mp
+          | k < 1           = mp -- LCP of zero is not a useful LCP group
+          | otherwise       = Map.insert k new_el mp
           where
-            old_el = Map.findWithDefault Heap.empty k map
+            old_el = Map.findWithDefault Heap.empty k mp
             new_el = Heap.insert v old_el
 
-        add_ends_to map = 
-          map_append (lcparr!0) beg $ map_append (lcparr!(final_idx-1)) end map
+        add_ends_to mp = 
+          map_append (lcparr!0) beg $ map_append (lcparr!(final_idx-1)) end mp
           where
             beg = GroupElem (head sarr) 0
             end = GroupElem (last sarr) final_idx
@@ -93,8 +90,8 @@ groups sarr lcparr
         middle = 
           List.foldl add_element Map.empty [1..(final_idx-1)]
           where
-            add_element map sa_idx = 
-              map_append lcp (GroupElem (sarr!sa_idx) sa_idx) map
+            add_element mp sa_idx = 
+              map_append lcp (GroupElem (sarr!sa_idx) sa_idx) mp
               where
                 lcp = max (lcparr!(sa_idx-1)) $ lcparr!sa_idx
 
