@@ -4,6 +4,7 @@ import qualified Data.CycleRoll as CR
 import qualified Data.CycleRoll.LCP as LCP
 import qualified Data.CycleRoll.SuffixArray as SA
 import qualified Data.CycleRoll.Sequence as Seq
+import qualified Data.CycleRoll.Util as Util
 
 import System.Environment
 import Data.List
@@ -38,7 +39,7 @@ main = do
         lcps  = LCP.array input sa
         merged_grps = LCP.mergedGroups $ LCP.groups sa lcps
         lcp_strs = map (("        "++) . show) $ UV.toList lcps
-        seqs  = Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
+        seqs  = concat $ map Util.listFromHeap $ Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
 
       putStrLn $ "input: " ++ str
       putStrLn $ "suffixes: " ++ "\nsrc idx | lcp | suffix \n----------------------------" ++ "\n  " ++ (intercalate "\n  " (interleave lcp_strs sufs))
