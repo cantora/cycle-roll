@@ -15,6 +15,7 @@ import qualified Data.IntervalMap.Interval as Ivl
 import qualified Data.List as List
 import qualified Data.Foldable as Foldable
 import Data.Maybe
+import Debug.Trace
 
 suffixes :: UV.Vector Char -> UV.Vector Int -> [[Char]]
 suffixes data_v suf_arr =
@@ -50,19 +51,18 @@ mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
   | d_off > s_off        = (d_len, d)
   | s_off >= d_off+d_len = (d_len, d)
   | s_end > d_sp         = (d_len, d)
-  | otherwise            = (d_len, RSeqNode d_rpt (thehead:themid:thetail))
+  | s_len == d_sp        = (d_len, RSeqLeaf s_sp $ (d_rpt+1) * (s_rpt+1) - 1)
+  | s_off2 == 0          = (d_len, RSeqNode d_rpt $ themid:thetail:[])
+  | s_end == d_sp        = (d_len, RSeqNode d_rpt $ thehead:themid:[])
+  | otherwise            = (d_len, RSeqNode d_rpt $ thehead:themid:thetail:[])
   where
-    d_len      = d_sp*d_rpt
+    d_len      = rSeqNodeLength d
     s_off2     = s_off `mod` d_sp
+    s_len      = S.length' s_sp s_rpt
     s_end      = s_off2 + s_len
-    s_len      = s_sp*s_rpt
     thehead    = RSeqLeaf s_off2 0
-    themid     = RSeqLeaf s_len s_rpt
-    thetail
-      | t_len < 1   = []
-      | otherwise  = (RSeqLeaf t_len 0):[]
-      where 
-        t_len = d_sp - s_len
+    themid     = RSeqLeaf s_sp s_rpt
+    thetail    = RSeqLeaf (d_sp - s_end) 0
 
 mergeSubSeq d_off (RSeqNode d_rpt subs) s_off s_sp s_rpt =
   (d_len, RSeqNode d_rpt $ reverse new_subseqs)
@@ -94,7 +94,14 @@ addSeqToIMap imap s@(S.Sequence off sp rpt)
 
 sequenceIntervals :: [Heap.Heap S.Sequence] -> IntervalMap
 sequenceIntervals seqs =
-  foldl (Foldable.foldl addSeqToIMap) IvlMap.empty seqs
+  foldl (Foldable.foldl process_seq) IvlMap.empty seqs
+  where
+    process_seq imap (S.Sequence off sp rpt) =
+	  let 
+        seq_i i = S.Sequence off sp i
+        add_seq_to_imap imp i = addSeqToIMap imp $ seq_i i
+      in foldl add_seq_to_imap imap (reverse [1..rpt])
+-- trace ("add sequence " ++ (show $ seq_i i) ++ "\ncurrent imap: " ++ (show imp)) $ 
 
 roll :: Int -> [Heap.Heap S.Sequence] -> [RSequence]
 roll src_len sequences =
@@ -110,8 +117,11 @@ roll src_len sequences =
       | otherwise        = error "this shouldnt happen"
       where
         remain        = RSequence off $ RSeqLeaf (l - off) 0
-        fill          = RSequence off $ RSeqLeaf (min_off - off) 0
-        recurse       = process (min_off+min_len) (IvlMap.deleteMin imp)
         (_, min_rseq) = IvlMap.findMin imp
         min_off       = offset min_rseq
         min_len       = rSequenceLength min_rseq
+        next_off      = min_off+min_len
+        fill          = RSequence off $ RSeqLeaf (min_off - off) 0
+        recurse       = process next_off (IvlMap.deleteMin imp)
+
+-- trace ("roll got sequence: " ++ (show min_rseq) ++ "\n  recurse to " ++ (show next_off)) $ 

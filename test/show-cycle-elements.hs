@@ -45,7 +45,7 @@ main = do
 
       putStrLn $ "input: " ++ str
       putStrLn $ "suffixes: " ++ "\nsrc idx | lcp | suffix \n----------------------------" ++ "\n  " ++ (intercalate "\n  " (interleave lcp_strs sufs))
-      putStrLn $ "groups: \n" ++ (show_groups merged_grps)
+      putStrLn $ "groups: \n" ++ (show_groups merged_grps) ++ "\n"
 
-      putStrLn $ "seqs: \n  " ++ (intercalate "\n  " $ map show seqs)
-      putStrLn $ "result: \n  " ++ (show result)
+      putStrLn $ "seqs: \n  " ++ (intercalate "\n  " $ map show seqs) ++ "\n"
+      putStrLn $ "result: \n  " ++ (intercalate "\n  " $ map show result) ++ "\n"

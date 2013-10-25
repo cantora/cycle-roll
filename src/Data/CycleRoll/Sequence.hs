@@ -1,5 +1,9 @@
 module Data.CycleRoll.Sequence where
 
+import Prelude hiding (
+  length
+  )
+
 import qualified Data.CycleRoll.LCP as LCP
 import qualified Data.CycleRoll.Util as Util
 
@@ -16,8 +20,15 @@ data Sequence =
     repeats :: Int
     } deriving (Show, Eq, Ord)
 
+length' :: Int -> Int -> Int
+length' sp rpt = sp*(rpt+1)
+length :: Sequence -> Int
+length (Sequence _ sp rpt) = length' sp rpt
+
+end' :: Int -> Int -> Int -> Int
+end' off sp rpt = off + (length' sp rpt)
 end :: Sequence -> Int
-end (Sequence off sp rpt) = off + sp*rpt
+end (Sequence off sp rpt) = end' off sp rpt
 
 lcpGroupSequences :: (Int -> Int -> Int -> Bool) -> LCP.Group -> Heap.Heap Sequence
 lcpGroupSequences lcp_rmq (LCP.Group lcp memb) =
