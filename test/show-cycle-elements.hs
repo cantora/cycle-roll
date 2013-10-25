@@ -33,16 +33,19 @@ main = do
 
     process str = do
       let 
-        input = UV.fromList $ str ++ "!"
-        sa    = SA.make input
-        sufs  = CR.suffixes input sa
-        lcps  = LCP.array input sa
+        input       = UV.fromList $ str ++ "!"
+        sa          = SA.make input
+        sufs        = CR.suffixes input sa
+        lcps        = LCP.array input sa
         merged_grps = LCP.mergedGroups $ LCP.groups sa lcps
-        lcp_strs = map (("        "++) . show) $ UV.toList lcps
-        seqs  = concat $ map Util.listFromHeap $ Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
+        lcp_strs    = map (("        "++) . show) $ UV.toList lcps
+        seqs        = Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
+        all_seqs    = concat $ map Util.listFromHeap $ seqs
+        result      = CR.roll (UV.length input) seqs
 
       putStrLn $ "input: " ++ str
       putStrLn $ "suffixes: " ++ "\nsrc idx | lcp | suffix \n----------------------------" ++ "\n  " ++ (intercalate "\n  " (interleave lcp_strs sufs))
       putStrLn $ "groups: \n" ++ (show_groups merged_grps)
 
       putStrLn $ "seqs: \n  " ++ (intercalate "\n  " $ map show seqs)
+      putStrLn $ "result: \n  " ++ (show result)

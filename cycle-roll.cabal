@@ -32,7 +32,8 @@ library
     heaps,
     vector,
     vector-algorithms,
-    suffixarray
+    suffixarray,
+    IntervalMap
   ghc-options:      
     -Wall
     -O2
@@ -44,9 +45,11 @@ test-suite tests
   build-depends:    
     base,
     containers,
+    heaps,
     vector,
     vector-algorithms,
     suffixarray,
+    IntervalMap,
     HUnit,
     QuickCheck,
     test-framework,

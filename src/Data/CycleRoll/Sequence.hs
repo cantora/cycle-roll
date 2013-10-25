@@ -5,6 +5,7 @@ import qualified Data.CycleRoll.Util as Util
 
 import qualified Data.Heap as Heap
 import qualified Data.Foldable as Foldable
+
 import Debug.Trace
 import Data.List
 
@@ -14,6 +15,9 @@ data Sequence =
     span :: Int,
     repeats :: Int
     } deriving (Show, Eq, Ord)
+
+end :: Sequence -> Int
+end (Sequence off sp rpt) = off + sp*rpt
 
 lcpGroupSequences :: (Int -> Int -> Int -> Bool) -> LCP.Group -> Heap.Heap Sequence
 lcpGroupSequences lcp_rmq (LCP.Group lcp memb) =
@@ -64,3 +68,4 @@ sequences srclen merged_grps lcp_rmq =
     grp_seqs grp@(LCP.Group lcp _)
       | lcp >= (srclen `div` 2) = Heap.empty
       | otherwise               = lcpGroupSequences lcp_rmq grp
+
