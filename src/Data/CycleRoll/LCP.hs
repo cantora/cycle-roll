@@ -65,11 +65,11 @@ instance Show Group where
 groups :: Vector Int -> Vector Int -> Heap.Heap Group
 groups sarr lcparr 
   | length lcparr < 1 = Heap.empty
-  | otherwise         = Map.foldlWithKey fold_fn Heap.empty lcpGroupMap
+  | otherwise         = Map.foldlWithKey fold_fn Heap.empty lcp_group_map
   where
     fold_fn hp key val = Heap.insert (Group key val) hp
 
-    lcpGroupMap = 
+    lcp_group_map = 
       add_ends_to middle
       where
         final_idx = (length sarr)-1
@@ -78,8 +78,7 @@ groups sarr lcparr
           | k < 1           = mp -- LCP of zero is not a useful LCP group
           | otherwise       = Map.insert k new_el mp
           where
-            old_el = Map.findWithDefault Heap.empty k mp
-            new_el = Heap.insert v old_el
+            new_el = Heap.insert v $ Map.findWithDefault Heap.empty k mp
 
         add_ends_to mp = 
           map_append (lcparr!0) beg $ map_append (lcparr!(final_idx-1)) end mp
