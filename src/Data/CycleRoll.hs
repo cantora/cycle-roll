@@ -1,8 +1,8 @@
 module Data.CycleRoll (
-  suffixes,
   RSequence(..),
   RSeqNode(..),
-  roll
+  roll,
+  rSeqNodeLength
   ) where
 
 import qualified Data.CycleRoll.SuffixArray as SA
@@ -17,17 +17,6 @@ import qualified Data.Foldable as Foldable
 import Data.Maybe
 import Debug.Trace
 
-suffixes :: UV.Vector Char -> UV.Vector Int -> [[Char]]
-suffixes data_v suf_arr =
-  process suf_arr
-  where
-    process sa 
-      | sa == UV.empty   = []
-      | otherwise        = ((show d_idx) ++ "\t\t" ++ sufx) : (process $ UV.tail sa)
-      where
-        d_idx = UV.head sa
-        sufx  = UV.toList $ SA.entry' data_v d_idx
-
 data RSequence = RSequence { offset :: Int, root :: RSeqNode } deriving (Show, Eq, Ord)
 data RSeqNode =
   RSeqLeaf { span :: Int, repeat :: Int }
@@ -35,6 +24,14 @@ data RSeqNode =
   deriving (Show, Eq, Ord)
 
 type IntervalMap = IvlMap.IntervalMap Int RSequence
+
+{-
+displayRSeqNode :: (UV.Unbox a) => Int -> UV.Vector a -> RSeqNode -> String
+displayRSeqNode off input (RSeqLeaf sp rpt) = 
+  (show $ UV.toList $ UV.slice off sp input) ++ "*" ++ (show rpt)
+displayRSeqNode off input (RSeqNode rpt subs) =
+  "(" ++ (show $ map (displayRSeqNode  subs)
+-}
 
 rSeqNodeLength :: RSeqNode -> Int
 rSeqNodeLength (RSeqLeaf sp rpt) = sp*(rpt+1)
@@ -46,6 +43,24 @@ rSeqNodeLength (RSeqNode rpt subs) =
 rSequenceLength :: RSequence -> Int
 rSequenceLength (RSequence _ rt) = rSeqNodeLength rt
 
+foldRSeqNode :: 
+  (Int -> a -> RSeqNode -> a) -> 
+  Int -> 
+  a -> 
+  RSeqNode -> 
+  (Int, a)
+foldRSeqNode fn base_off base r@(RSeqLeaf _ _) =
+  (rSeqNodeLength r, fn base_off base r)
+foldRSeqNode fn base_off base (RSeqNode rpt subs) = 
+  (r_len*(rpt+1), result)
+  where
+    f_fn (l, b) rsnode  = 
+      let 
+        (new_l, new_b) = foldRSeqNode fn l b rsnode
+      in (l+new_l, new_b)
+    
+    (r_len, result) = foldl f_fn (base_off, base) subs
+	
 mergeSubSeq :: Int -> RSeqNode -> Int -> Int -> Int -> (Int, RSeqNode)
 mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
   | d_off > s_off        = (d_len, d)

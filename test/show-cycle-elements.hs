@@ -17,6 +17,17 @@ interleave [] xs = xs
 interleave (x1:xs1) (x2:[]) = [x2]
 interleave (x1:xs1) (x2:xs2) = [x2,x1] ++ (interleave xs1 xs2)
 
+suffixes :: UV.Vector Char -> UV.Vector Int -> [[Char]]
+suffixes data_v suf_arr =
+  process suf_arr
+  where
+    process sa 
+      | sa == UV.empty   = []
+      | otherwise        = ((show d_idx) ++ "\t\t" ++ sufx) : (process $ UV.tail sa)
+      where
+        d_idx = UV.head sa
+        sufx  = UV.toList $ SA.entry' data_v d_idx
+
 main = do
   --line <- readline "
   args <- getArgs
@@ -35,13 +46,14 @@ main = do
       let 
         input       = UV.fromList $ str ++ "!"
         sa          = SA.make input
-        sufs        = CR.suffixes input sa
+        sufs        = suffixes input sa
         lcps        = LCP.array input sa
         merged_grps = LCP.mergedGroups $ LCP.groups sa lcps
         lcp_strs    = map (("        "++) . show) $ UV.toList lcps
         seqs        = Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
         all_seqs    = concat $ map Util.listFromHeap $ seqs
         result      = CR.roll (UV.length input) seqs
+        -- display result = map disp_rseq result
 
       putStrLn $ "input: " ++ str
       putStrLn $ "suffixes: " ++ "\nsrc idx | lcp | suffix \n----------------------------" ++ "\n  " ++ (intercalate "\n  " (interleave lcp_strs sufs))
