@@ -3,7 +3,8 @@ module Data.CycleRoll (
   RSeqNode(..),
   roll,
   rSeqNodeLength,
-  foldRSeqNode
+  foldRSeqNode,
+  mergeSubSeq
   ) where
 
 import qualified Data.CycleRoll.SuffixArray as SA
@@ -67,7 +68,7 @@ mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
   | otherwise            = (d_len, RSeqNode d_rpt $ thehead:themid:thetail:[])
   where
     d_len      = rSeqNodeLength d
-    s_off2     = s_off `mod` d_sp
+    s_off2     = (s_off-d_off) `mod` d_sp
     s_len      = S.length' s_sp s_rpt
     s_end      = s_off2 + s_len
     thehead    = RSeqLeaf s_off2 0

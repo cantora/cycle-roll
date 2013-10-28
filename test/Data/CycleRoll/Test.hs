@@ -19,7 +19,8 @@ import Debug.Trace
 group = 
   testGroup "CycleRoll" [
     basic_group,
-    rSeqNode_group
+    rSeqNode_group,
+    mergeSubSeq_group
     ]
 
 basic_group = 
@@ -31,6 +32,17 @@ basic_group =
     sa      = SA.make input
 
     suffix_array = (fromList [9,7,5,0,2,8,6,1,3,4]) @=? sa
+
+makeRSeqLeaf :: Int -> Gen CR.RSeqNode
+makeRSeqLeaf n = 
+  do
+    q <- liftM (find_divisor n) $ choose (1, n)
+    return $ CR.RSeqLeaf q $ (n `div` q) - 1
+  where
+    find_divisor n m 
+      | m > n           = error "m must be <= n"
+      | n `mod` m == 0  = m
+      | otherwise       = find_divisor n $ m+1
 
 data RSeqNodeWSz = 
   RSeqNodeWSz Int CR.RSeqNode deriving (Show, Eq, Ord)
@@ -82,20 +94,9 @@ instance Arbitrary RSeqNodeWSz where
             return $ CR.RSeqNode rpt $ extra:subs
           else return $ CR.RSeqNode rpt subs
 
-      make_leaf n = 
-        do
-          q <- liftM (find_divisor n) $ choose (1, n)
-          return $ CR.RSeqLeaf q $ (n `div` q) - 1
-        where
-          find_divisor n m 
-            | m > n           = error "m must be <= n"
-            | n `mod` m == 0  = m
-            | otherwise       = find_divisor n $ m+1
-
       make 0 = fail "cant make rseqnode with 0 size"
-      make 1 = make_leaf 1
-      make n = frequency [(1, make_leaf n), (1, make_node n)]
-
+      make 1 = makeRSeqLeaf 1
+      make n = frequency [(1, makeRSeqLeaf n), (1, make_node n)]
 
 
 rSeqNode_group = 
@@ -154,8 +155,56 @@ rSeqNode_group =
               ]
             ]            
 
-        fn off (idx, bl) lf = trace (show (off, lf)) $ (idx+1, bl && (mp List.!! idx) == off)
+        fn off (idx, bl) lf = (idx+1, bl && (mp List.!! idx) == off)
       in (8, True) @=? (snd $ CR.foldRSeqNode fn 0 (0, True) rseq)
 
-{-
--}
+
+data RSeqLeafNode = RSeqLeafNode CR.RSeqNode deriving (Show, Eq, Ord)
+instance Arbitrary RSeqLeafNode where
+  arbitrary = liftM RSeqLeafNode $ sized (\n -> makeRSeqLeaf $ n+1)
+
+intLimit = 0xffffff -- reasonably big but not ridiculous
+data Pos = Pos Int deriving (Show, Eq, Ord)
+instance Arbitrary Pos where
+  arbitrary = liftM Pos $ choose (1, intLimit)
+data NonNeg = NonNeg Int deriving (Show, Eq, Ord)
+instance Arbitrary NonNeg where
+  arbitrary = liftM NonNeg $ choose (0, intLimit)
+
+mergeSubSeq_group =
+  testGroup "mergeSubSeq" [
+    testProperty  "out of leaf bounds1"       prop_leaf_bound1,
+    testProperty  "out of leaf bounds2"       prop_leaf_bound2,
+    testProperty  "seq end exceeds leaf span" prop_leaf_span
+    ]
+  where
+    prop_leaf_bound1 :: 
+      Pos -> RSeqLeafNode -> Pos -> Pos -> NonNeg -> Bool
+    prop_leaf_bound1 (Pos off) (RSeqLeafNode rsleaf) (Pos s_off) (Pos s_sp) (NonNeg s_rpt) = 
+      r_result == (CR.rSeqNodeLength rsleaf, rsleaf)
+      where
+        less_off
+          | s_off < off     = s_off
+          | (off-s_off) < 0 = 0
+          | otherwise       = off-s_off
+        r_result = CR.mergeSubSeq off rsleaf less_off s_sp s_rpt
+
+    prop_leaf_bound2 :: 
+      NonNeg -> RSeqLeafNode -> NonNeg -> Pos -> NonNeg -> Bool
+    prop_leaf_bound2 (NonNeg off) (RSeqLeafNode rsleaf) (NonNeg s_off) (Pos s_sp) (NonNeg s_rpt) = 
+      r_result == (rsleaf_len, rsleaf)
+      where
+        rsleaf_len = CR.rSeqNodeLength rsleaf
+        more_off   = off + rsleaf_len + s_off
+        r_result   = CR.mergeSubSeq off rsleaf more_off s_sp s_rpt
+
+    prop_leaf_span :: 
+      NonNeg -> RSeqLeafNode -> NonNeg -> Pos -> NonNeg -> Bool      
+    prop_leaf_span (NonNeg off) (RSeqLeafNode rsleaf@(CR.RSeqLeaf rs_sp _)) (NonNeg s_off) (Pos s_sp) (NonNeg s_rpt) = 
+      r_result == (rsleaf_len, rsleaf)
+      where
+        rsleaf_len = CR.rSeqNodeLength rsleaf
+        s_off_mod  = s_off `mod` rs_sp
+        s_sp'      = (rs_sp - s_off_mod) + s_sp
+        r_result   = CR.mergeSubSeq off rsleaf (off+s_off_mod) s_sp' s_rpt
+        
