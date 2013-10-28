@@ -2,7 +2,8 @@ module Data.CycleRoll (
   RSequence(..),
   RSeqNode(..),
   roll,
-  rSeqNodeLength
+  rSeqNodeLength,
+  foldRSeqNode
   ) where
 
 import qualified Data.CycleRoll.SuffixArray as SA
@@ -34,32 +35,26 @@ displayRSeqNode off input (RSeqNode rpt subs) =
 -}
 
 rSeqNodeLength :: RSeqNode -> Int
-rSeqNodeLength (RSeqLeaf sp rpt) = sp*(rpt+1)
-rSeqNodeLength (RSeqNode rpt subs) =
-  (rpt+1)*(Foldable.foldl fn 0 subs)
-  where
-    fn l sub = l + (rSeqNodeLength sub)
+rSeqNodeLength = 
+  fst . (foldRSeqNode (\_ _ _ -> ()) 0 ())
 
 rSequenceLength :: RSequence -> Int
 rSequenceLength (RSequence _ rt) = rSeqNodeLength rt
 
 foldRSeqNode :: 
-  (Int -> a -> RSeqNode -> a) -> 
-  Int -> 
-  a -> 
-  RSeqNode -> 
-  (Int, a)
-foldRSeqNode fn base_off base r@(RSeqLeaf _ _) =
-  (rSeqNodeLength r, fn base_off base r)
-foldRSeqNode fn base_off base (RSeqNode rpt subs) = 
-  (r_len*(rpt+1), result)
+  (Int -> a -> RSeqNode -> a) -> -- start offset, accumulator, node. returns new accumulator
+  Int ->                         -- current offset
+  a ->                           -- base accumulator
+  RSeqNode ->                    -- root node
+  (Int, a)                       -- length of rseq node, accumulator result
+foldRSeqNode fn start_off base r@(RSeqLeaf sp rpt) =
+  (start_off + sp*(rpt+1), fn start_off base r)
+foldRSeqNode fn start_off base (RSeqNode rpt subs) = 
+  (start_off + off_diff*(rpt+1), result)
   where
-    f_fn (l, b) rsnode  = 
-      let 
-        (new_l, new_b) = foldRSeqNode fn l b rsnode
-      in (l+new_l, new_b)
-    
-    (r_len, result) = foldl f_fn (base_off, base) subs
+    f_fn (curr_off, b) rsnode = foldRSeqNode fn curr_off b rsnode 
+    (new_off, result)         = foldl f_fn (start_off, base) subs
+    off_diff                  = (new_off-start_off)
 	
 mergeSubSeq :: Int -> RSeqNode -> Int -> Int -> Int -> (Int, RSeqNode)
 mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt

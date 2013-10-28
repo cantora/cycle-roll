@@ -13,11 +13,13 @@ import Test.Framework.Providers.QuickCheck2
 import Test.HUnit
 import Test.QuickCheck
 import Control.Monad
+import qualified Data.List as List
+import Debug.Trace
 
 group = 
   testGroup "CycleRoll" [
     basic_group,
-    rSeqNodeLength_group
+    rSeqNode_group
     ]
 
 basic_group = 
@@ -71,7 +73,7 @@ instance Arbitrary RSeqNodeWSz where
               (q, r) = n `quotRem` m'
 
       make_node n = do
-        max_amt <- choose (1, n)
+        max_amt <- choose (2, n)
         (used, subs) <- make_subs n max_amt 0 0
         let (rpt, remain) = find_rpt n used
         if (remain > 0)
@@ -96,10 +98,64 @@ instance Arbitrary RSeqNodeWSz where
 
 
 
-rSeqNodeLength_group = 
-  testGroup "rSeqNodeLength" [
-    testProperty     "len"    prop_len
+rSeqNode_group = 
+  testGroup "rSeqNode" [
+    testProperty "len"         prop_len,
+    testProperty "fold_eq_len" prop_fold_eq_len,
+    testProperty "fold_offset" prop_fold_offset,
+    testCase     "fold_test1"  fold_test1
     ]
   where
     prop_len :: RSeqNodeWSz -> Bool
-    prop_len (RSeqNodeWSz sz rsnode) = sz == (CR.rSeqNodeLength rsnode)
+    prop_len (RSeqNodeWSz sz rsnode) = 
+      sz == (CR.rSeqNodeLength rsnode)
+
+    prop_fold_eq_len :: RSeqNodeWSz -> Bool
+    prop_fold_eq_len (RSeqNodeWSz sz rsnode) = 
+      let
+        fn _ lvs leaf = leaf:lvs
+        folded = CR.foldRSeqNode fn 0 [] rsnode
+      in (CR.rSeqNodeLength rsnode) == fst folded
+
+    prop_fold_offset :: Int -> RSeqNodeWSz -> Bool
+    prop_fold_offset start_off (RSeqNodeWSz sz rsnode) = 
+      let
+        fn _ lvs leaf = leaf:lvs
+        folded = fst $ CR.foldRSeqNode fn start_off [] rsnode
+      in (start_off + (CR.rSeqNodeLength rsnode)) == folded
+
+    fold_test1 =
+      let 
+        mp = [
+          0, 4, 4+4, (8+4)+8,
+          4+5*(8*2 + 6*3),
+          174 + 3,
+          177 + 5*4,
+          197 + 3*2
+          ]
+
+        rseq = 
+          CR.RSeqNode 0 [
+            CR.RSeqLeaf 2 1,     -- 0
+            CR.RSeqNode 4 [
+              CR.RSeqNode 1 [
+                CR.RSeqLeaf 4 0, -- 4
+                CR.RSeqLeaf 1 3  -- 8
+                ],
+              CR.RSeqLeaf 6 2    -- (8+4)+8
+              ],
+            CR.RSeqLeaf 3 0,     -- 4+5*(8*2 + 6*3)
+            CR.RSeqNode 1 [
+              CR.RSeqLeaf 5 3,   -- 174+3
+              CR.RSeqNode 3 [    
+                CR.RSeqLeaf 3 1, -- 177+5*4
+                CR.RSeqLeaf 2 3  -- 197+3*2
+                ]
+              ]
+            ]            
+
+        fn off (idx, bl) lf = trace (show (off, lf)) $ (idx+1, bl && (mp List.!! idx) == off)
+      in (8, True) @=? (snd $ CR.foldRSeqNode fn 0 (0, True) rseq)
+
+{-
+-}
