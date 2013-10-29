@@ -8,17 +8,15 @@ module Data.CycleRoll (
   mergeSubSeq
   ) where
 
-import qualified Data.CycleRoll.SuffixArray as SA
 import qualified Data.CycleRoll.Sequence as S
 
-import qualified Data.Vector.Unboxed as UV
 import qualified Data.Heap as Heap
 import qualified Data.IntervalMap.Lazy as IvlMap
 import qualified Data.IntervalMap.Interval as Ivl
 import qualified Data.List as List
 import qualified Data.Foldable as Foldable
 import Data.Maybe
-import Debug.Trace
+--import Debug.Trace
 
 data RSequence = RSequence { offset :: Int, root :: RSeqNode } deriving (Show, Eq, Ord)
 data RSeqNode =
@@ -43,10 +41,17 @@ rSeqNodeLength =
 
 --number of leaf nodes in the recursive sequence
 rSeqNodeSize :: RSeqNode -> Int
-rSeqNodeSize = snd . (foldRSeqNode (\_ n _ -> n+1) 0 0)
+rSeqNodeSize = 
+  snd . (foldRSeqNode fn 0 0)
+  where
+    fn _ n (RSeqLeaf _ _) = n+1
+    fn _ n _              = n
 
 rSequenceLength :: RSequence -> Int
 rSequenceLength (RSequence _ rt) = rSeqNodeLength rt
+
+--rSequenceSize :: RSequence -> Int
+--rSequenceSize (RSequence _ rt) = rSeqNodeSize rt
 
 foldRSeqNode :: 
   (Int -> a -> RSeqNode -> a) -> -- start offset, accumulator, node. returns new accumulator
@@ -56,8 +61,8 @@ foldRSeqNode ::
   (Int, a)                       -- length of rseq node, accumulator result
 foldRSeqNode fn start_off base r@(RSeqLeaf sp rpt) =
   (start_off + sp*(rpt+1), fn start_off base r)
-foldRSeqNode fn start_off base (RSeqNode rpt subs) = 
-  (start_off + off_diff*(rpt+1), result)
+foldRSeqNode fn start_off base r@(RSeqNode rpt subs) = 
+  (start_off + off_diff*(rpt+1), fn start_off result r)
   where
     f_fn (curr_off, b) rsnode = foldRSeqNode fn curr_off b rsnode 
     (new_off, result)         = foldl f_fn (start_off, base) subs

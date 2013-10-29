@@ -119,26 +119,37 @@ rSeqNode_group =
     prop_fold_eq_len :: RSeqNodeWSz -> Bool
     prop_fold_eq_len (RSeqNodeWSz sz rsnode) = 
       let
-        fn _ lvs leaf = leaf:lvs
+        fn _ lvs leaf@(CR.RSeqLeaf _ _) = leaf:lvs
+        fn _ lvs _                      = lvs
         folded = CR.foldRSeqNode fn 0 [] rsnode
       in (CR.rSeqNodeLength rsnode) == fst folded
 
     prop_fold_offset :: Int -> RSeqNodeWSz -> Bool
     prop_fold_offset start_off (RSeqNodeWSz sz rsnode) = 
       let
-        fn _ lvs leaf = leaf:lvs
+        fn _ lvs leaf@(CR.RSeqLeaf _ _) = leaf:lvs
+        fn _ lvs _                      = lvs
         folded = fst $ CR.foldRSeqNode fn start_off [] rsnode
       in (start_off + (CR.rSeqNodeLength rsnode)) == folded
 
     fold_test1 =
       let 
-        mp = [
-          0, 4, 4+4, (8+4)+8,
-          4+5*(8*2 + 6*3),
-          174 + 3,
-          177 + 5*4,
-          197 + 3*2
-          ]
+        mp = 
+          [
+              0, 
+                  4,
+                  4+4,
+                4,
+                (8+4)+8,
+              4,
+              4+5*(8*2 + 6*3),
+                174 + 3,
+                  177 + 5*4,
+                  197 + 3*2,
+                177 + 5*4,
+              174+3,
+            0
+            ]
 
         rseq = 
           CR.RSeqNode 0 [
@@ -147,21 +158,21 @@ rSeqNode_group =
               CR.RSeqNode 1 [
                 CR.RSeqLeaf 4 0, -- 4
                 CR.RSeqLeaf 1 3  -- 8
-                ],
+                ], -- 4
               CR.RSeqLeaf 6 2    -- (8+4)+8
-              ],
+              ], -- 4
             CR.RSeqLeaf 3 0,     -- 4+5*(8*2 + 6*3)
             CR.RSeqNode 1 [
               CR.RSeqLeaf 5 3,   -- 174+3
               CR.RSeqNode 3 [    
                 CR.RSeqLeaf 3 1, -- 177+5*4
                 CR.RSeqLeaf 2 3  -- 197+3*2
-                ]
-              ]
-            ]            
+                ] -- 177 + 5*4
+              ] -- 174+3
+            ] -- 0
 
-        fn off (idx, bl) lf = (idx+1, bl && (mp List.!! idx) == off)
-      in (8, True) @=? (snd $ CR.foldRSeqNode fn 0 (0, True) rseq)
+        fn off (idx, bl) _ = (idx+1, bl && (mp List.!! idx) == off)
+      in (13, True) @=? (snd $ CR.foldRSeqNode fn 0 (0, True) rseq)
 
 
 data RSeqLeafNode = RSeqLeafNode CR.RSeqNode deriving (Show, Eq, Ord)
