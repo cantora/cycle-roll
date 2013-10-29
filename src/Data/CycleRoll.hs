@@ -3,6 +3,7 @@ module Data.CycleRoll (
   RSeqNode(..),
   roll,
   rSeqNodeLength,
+  rSeqNodeSize,
   foldRSeqNode,
   mergeSubSeq
   ) where
@@ -35,9 +36,14 @@ displayRSeqNode off input (RSeqNode rpt subs) =
   "(" ++ (show $ map (displayRSeqNode  subs)
 -}
 
+--total length of all the leaf nodes combined
 rSeqNodeLength :: RSeqNode -> Int
 rSeqNodeLength = 
   fst . (foldRSeqNode (\_ _ _ -> ()) 0 ())
+
+--number of leaf nodes in the recursive sequence
+rSeqNodeSize :: RSeqNode -> Int
+rSeqNodeSize = snd . (foldRSeqNode (\_ n _ -> n+1) 0 0)
 
 rSequenceLength :: RSequence -> Int
 rSequenceLength (RSequence _ rt) = rSeqNodeLength rt
@@ -76,7 +82,7 @@ mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
     thetail    = RSeqLeaf (d_sp - s_end) 0
 
 mergeSubSeq d_off (RSeqNode d_rpt subs) s_off s_sp s_rpt =
-  (d_len, RSeqNode d_rpt $ reverse new_subseqs)
+  (d_len*(d_rpt+1), RSeqNode d_rpt $ reverse new_subseqs)
   where
     f_fn (l, ss) rsnode  = 
       let 
