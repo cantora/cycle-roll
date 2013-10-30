@@ -70,13 +70,13 @@ foldRSeqNode fn start_off base r@(RSeqNode rpt subs) =
 	
 mergeSubSeq :: Int -> RSeqNode -> Int -> Int -> Int -> (Int, RSeqNode)
 mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
-  | d_off > s_off        = (d_len, d)
-  | s_off >= d_off+d_len = (d_len, d)
-  | s_end > d_sp         = (d_len, d)
-  | s_len == d_sp        = (d_len, RSeqLeaf s_sp $ (d_rpt+1) * (s_rpt+1) - 1)
-  | s_off2 == 0          = (d_len, RSeqNode d_rpt $ themid:thetail:[])
-  | s_end == d_sp        = (d_len, RSeqNode d_rpt $ thehead:themid:[])
-  | otherwise            = (d_len, RSeqNode d_rpt $ thehead:themid:thetail:[])
+  | d_off > s_off        = ret d
+  | s_off >= d_off+d_len = ret d
+  | s_end > d_sp         = ret d
+  | s_len == d_sp        = ret $ RSeqLeaf s_sp $ (d_rpt+1) * (s_rpt+1) - 1
+  | s_off2 == 0          = rseqnode $ themid:thetail:[]
+  | s_end == d_sp        = rseqnode $ thehead:themid:[]
+  | otherwise            = rseqnode $ thehead:themid:thetail:[]
   where
     d_len      = rSeqNodeLength d
     s_off2     = (s_off-d_off) `mod` d_sp
@@ -85,6 +85,8 @@ mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
     thehead    = RSeqLeaf s_off2 0
     themid     = RSeqLeaf s_sp s_rpt
     thetail    = RSeqLeaf (d_sp - s_end) 0
+    ret x      = (d_len, x)
+    rseqnode s = ret $ RSeqNode d_rpt s
 
 mergeSubSeq d_off (RSeqNode d_rpt subs) s_off s_sp s_rpt =
   (d_len*(d_rpt+1), RSeqNode d_rpt $ reverse new_subseqs)
