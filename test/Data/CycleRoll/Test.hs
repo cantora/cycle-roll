@@ -15,9 +15,9 @@ import Test.QuickCheck
 import Control.Monad
 import qualified Data.List as List
 
---import qualified Debug.Trace as Trace
---trace :: (Show a) => a -> a
---trace x = Trace.trace (show x) x
+import qualified Debug.Trace as Trace
+trace :: (Show a) => a -> a
+trace x = Trace.trace (show x) x
 
 group = 
   testGroup "CycleRoll" [
@@ -97,7 +97,13 @@ instance Arbitrary RSeqNodeWSz where
           then do
             extra <- make remain
             return $ CR.RSeqNode rpt $ extra:subs
-          else return $ CR.RSeqNode rpt subs
+          else 
+            return $ case subs of 
+              ((CR.RSeqNode subs_rpt subs_subs):[])
+                -> CR.RSeqNode ((subs_rpt+1)*(rpt+1) - 1) subs_subs
+              ((CR.RSeqLeaf subs_sp subs_rpt):[])
+                -> CR.RSeqLeaf subs_sp $ (subs_rpt+1)*(rpt+1) - 1
+              _ -> CR.RSeqNode rpt subs                            
 
       make 0 = fail "cant make rseqnode with 0 size"
       make 1 = makeRSeqLeafGen 1
@@ -106,33 +112,31 @@ instance Arbitrary RSeqNodeWSz where
 
 rSeqNode_group = 
   testGroup "rSeqNode" [
-    testProperty "len"         prop_len,
-    testProperty "fold_eq_len" prop_fold_eq_len,
-    testProperty "fold_offset" prop_fold_offset,
-    testCase     "fold_test1"  fold_test1
+    testProperty "len"          prop_len,
+    testProperty "visit_eq_len" prop_visit_eq_len,
+    testProperty "visit_offset" prop_visit_offset,
+    testCase     "visit_test1"  visit_test1
     ]
   where
     prop_len :: RSeqNodeWSz -> Bool
     prop_len (RSeqNodeWSz sz rsnode) = 
       sz == (CR.rSeqNodeLength rsnode)
 
-    prop_fold_eq_len :: RSeqNodeWSz -> Bool
-    prop_fold_eq_len (RSeqNodeWSz sz rsnode) = 
+    prop_visit_eq_len :: RSeqNodeWSz -> Bool
+    prop_visit_eq_len (RSeqNodeWSz sz rsnode) = 
       let
-        fn _ lvs leaf@(CR.RSeqLeaf _ _) = leaf:lvs
-        fn _ lvs _                      = lvs
-        folded = CR.foldRSeqNode fn 0 [] rsnode
-      in (CR.rSeqNodeLength rsnode) == fst folded
+        fn _ _ _ _ = ()
+        result     = CR.visitRSeqNode fn 0 () rsnode
+      in (CR.rSeqNodeLength rsnode) == fst result
 
-    prop_fold_offset :: Int -> RSeqNodeWSz -> Bool
-    prop_fold_offset start_off (RSeqNodeWSz sz rsnode) = 
+    prop_visit_offset :: Int -> RSeqNodeWSz -> Bool
+    prop_visit_offset start_off (RSeqNodeWSz sz rsnode) = 
       let
-        fn _ lvs leaf@(CR.RSeqLeaf _ _) = leaf:lvs
-        fn _ lvs _                      = lvs
-        folded = fst $ CR.foldRSeqNode fn start_off [] rsnode
-      in (start_off + (CR.rSeqNodeLength rsnode)) == folded
+        fn _ _ _ _ = ()
+        result     = CR.visitRSeqNode fn start_off () rsnode
+      in (CR.rSeqNodeLength rsnode) == fst result
 
-    fold_test1 =
+    visit_test1 =
       let 
         mp = 
           [
@@ -171,8 +175,9 @@ rSeqNode_group =
               ] -- 174+3
             ] -- 0
 
-        fn off (idx, bl) _ = (idx+1, bl && (mp List.!! idx) == off)
-      in (13, True) @=? (snd $ CR.foldRSeqNode fn 0 (0, True) rseq)
+        fn off (idx, bl) _ (CR.RSeqLeaf _ _) = (idx+1, bl && (mp List.!! idx) == off)
+        fn off (idx, bl) (ch_idx, ch_bl) _   = (ch_idx+1, bl && ch_bl && (mp List.!! idx) == off)
+      in (13, True) @=? (snd $ CR.visitRSeqNode fn 0 (0, True) rseq)
 
 
 data RSeqLeafNode = RSeqLeafNode CR.RSeqNode deriving (Show, Eq, Ord)
@@ -205,7 +210,7 @@ mergeSubSeq_group =
   where
     prop_length_invariant :: NonNeg -> RSeqNodeWSz -> NonNeg -> NonNeg -> Bool
     prop_length_invariant (NonNeg off) (RSeqNodeWSz sz rsnode) (NonNeg s_off) (NonNeg s_len) =
-      (CR.rSeqNodeLength res_node) == sz && res_off == sz
+      (CR.rSeqNodeLength res_node) == sz && res_off == (off+sz)
       where
         s_len'        = (s_len `mod` sz) + 1
         s_off_mod
@@ -215,7 +220,7 @@ mergeSubSeq_group =
         leaf_tpl _                    = error "expected a leaf"
 
         (s_sp, s_rpt)       = leaf_tpl $ makeRSeqLeaf sz s_len'
-        (res_off, res_node) = CR.mergeSubSeq off rsnode s_off_mod s_sp s_rpt
+        (res_off, res_node) = trace $ Trace.traceShow (off, rsnode, (off+s_off_mod), s_sp, s_rpt) $ CR.mergeSubSeq off rsnode (off+s_off_mod) s_sp s_rpt
 
     prop_leaf_bound1 ::
       Pos -> RSeqLeafNode -> Pos -> Pos -> NonNeg -> Bool
