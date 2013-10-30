@@ -97,7 +97,13 @@ instance Arbitrary RSeqNodeWSz where
           then do
             extra <- make remain
             return $ CR.RSeqNode rpt $ extra:subs
-          else return $ CR.RSeqNode rpt subs
+          else 
+            return $ case subs of 
+              ((CR.RSeqNode subs_rpt subs_subs):[])
+                -> CR.RSeqNode ((subs_rpt+1)*(rpt+1) - 1) subs_subs
+              ((CR.RSeqLeaf subs_sp subs_rpt):[])
+                -> CR.RSeqLeaf subs_sp $ (subs_rpt+1)*(rpt+1) - 1
+              _ -> CR.RSeqNode rpt subs                            
 
       make 0 = fail "cant make rseqnode with 0 size"
       make 1 = makeRSeqLeafGen 1
@@ -215,7 +221,7 @@ mergeSubSeq_group =
         leaf_tpl _                    = error "expected a leaf"
 
         (s_sp, s_rpt)       = leaf_tpl $ makeRSeqLeaf sz s_len'
-        (res_off, res_node) = CR.mergeSubSeq off rsnode s_off_mod s_sp s_rpt
+        (res_off, res_node) = CR.mergeSubSeq off rsnode (off+s_off_mod) s_sp s_rpt
 
     prop_leaf_bound1 ::
       Pos -> RSeqLeafNode -> Pos -> Pos -> NonNeg -> Bool
