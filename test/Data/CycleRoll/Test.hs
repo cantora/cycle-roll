@@ -113,71 +113,65 @@ instance Arbitrary RSeqNodeWSz where
 rSeqNode_group = 
   testGroup "rSeqNode" [
     testProperty "len"          prop_len,
-    testProperty "visit_eq_len" prop_visit_eq_len,
-    testProperty "visit_offset" prop_visit_offset,
-    testCase     "visit_test1"  visit_test1
+    testProperty "txfm_eq_len"  prop_txfm_eq_len,
+    testCase     "txfm_test1"   txfm_test1
     ]
   where
     prop_len :: RSeqNodeWSz -> Bool
     prop_len (RSeqNodeWSz sz rsnode) = 
-      sz == (CR.rSeqNodeLength rsnode)
+      sz == CR.rSeqNodeLength rsnode
 
-    prop_visit_eq_len :: RSeqNodeWSz -> Bool
-    prop_visit_eq_len (RSeqNodeWSz sz rsnode) = 
+    prop_txfm_eq_len :: RSeqNodeWSz -> Bool
+    prop_txfm_eq_len (RSeqNodeWSz sz rsnode) = 
       let
-        fn _ _ _ _ = ()
-        result     = CR.visitRSeqNode fn 0 () rsnode
-      in (CR.rSeqNodeLength rsnode) == fst result
+        fn _ _ _ = CR.TxfmConst ()
+        result   = CR.txfmRSeqNode fn () rsnode
+      in sz == fst result
 
-    prop_visit_offset :: Int -> RSeqNodeWSz -> Bool
-    prop_visit_offset start_off (RSeqNodeWSz sz rsnode) = 
-      let
-        fn _ _ _ _ = ()
-        result     = CR.visitRSeqNode fn start_off () rsnode
-      in (CR.rSeqNodeLength rsnode) == fst result
-
-    visit_test1 =
+    txfm_test1 =
       let 
         mp = 
           [
-              0, 
-                  4,
-                  4+4,
-                4,
-                (8+4)+8,
+            0,
+              0,
               4,
+                4,
+                  4,                
+                  4+4,
+                (8+4)+8,
               4+5*(8*2 + 6*3),
-                174 + 3,
-                  177 + 5*4,
-                  197 + 3*2,
-                177 + 5*4,
               174+3,
-            0
+                174+3,
+                177+5*4,
+                  177 + 5*4,
+                  197 + 3*2
             ]
 
         rseq = 
-          CR.RSeqNode 0 [
-            CR.RSeqLeaf 2 1,     -- 0
-            CR.RSeqNode 4 [
-              CR.RSeqNode 1 [
-                CR.RSeqLeaf 4 0, -- 4
-                CR.RSeqLeaf 1 3  -- 8
-                ], -- 4
-              CR.RSeqLeaf 6 2    -- (8+4)+8
-              ], -- 4
-            CR.RSeqLeaf 3 0,     -- 4+5*(8*2 + 6*3)
-            CR.RSeqNode 1 [
-              CR.RSeqLeaf 5 3,   -- 174+3
-              CR.RSeqNode 3 [    
-                CR.RSeqLeaf 3 1, -- 177+5*4
-                CR.RSeqLeaf 2 3  -- 197+3*2
-                ] -- 177 + 5*4
-              ] -- 174+3
-            ] -- 0
+          CR.RSeqNode 0 [        -- 0
+            CR.RSeqLeaf 2 1,          -- 0
+            CR.RSeqNode 4 [      -- 4
+              CR.RSeqNode 1 [    -- 4
+                CR.RSeqLeaf 4 0,      -- 4
+                CR.RSeqLeaf 1 3       -- 8
+                ],
+              CR.RSeqLeaf 6 2         -- (8+4)+8
+              ], 
+            CR.RSeqLeaf 3 0,          -- 4+5*(8*2 + 6*3)
+            CR.RSeqNode 1 [      -- 174+3
+              CR.RSeqLeaf 5 3,        -- 174+3
+              CR.RSeqNode 3 [    -- 177 + 5*4
+                CR.RSeqLeaf 3 1,      -- 177+5*4
+                CR.RSeqLeaf 2 3       -- 197+3*2
+                ] 
+              ] 
+            ] 
 
-        fn off (idx, bl) _ (CR.RSeqLeaf _ _) = (idx+1, bl && (mp List.!! idx) == off)
-        fn off (idx, bl) (ch_idx, ch_bl) _   = (ch_idx+1, bl && ch_bl && (mp List.!! idx) == off)
-      in (13, True) @=? (snd $ CR.visitRSeqNode fn 0 (0, True) rseq)
+        fn off (idx, bl) (CR.RSeqLeaf _ _) = 
+          CR.TxfmConst (idx+1, bl && (mp List.!! idx) == off)
+        fn off (idx, bl) _ = 
+          CR.TxfmPair (idx+1, bl && (mp List.!! idx) == off) id
+      in (13, True) @=? (snd $ CR.txfmRSeqNode fn (0, True) rseq)
 
 
 data RSeqLeafNode = RSeqLeafNode CR.RSeqNode deriving (Show, Eq, Ord)
@@ -210,7 +204,7 @@ mergeSubSeq_group =
   where
     prop_length_invariant :: NonNeg -> RSeqNodeWSz -> NonNeg -> NonNeg -> Bool
     prop_length_invariant (NonNeg off) (RSeqNodeWSz sz rsnode) (NonNeg s_off) (NonNeg s_len) =
-      (CR.rSeqNodeLength res_node) == sz && res_off == (off+sz)
+      (CR.rSeqNodeLength res_node) == sz && res_off == sz
       where
         s_len'        = (s_len `mod` sz) + 1
         s_off_mod
@@ -220,7 +214,8 @@ mergeSubSeq_group =
         leaf_tpl _                    = error "expected a leaf"
 
         (s_sp, s_rpt)       = leaf_tpl $ makeRSeqLeaf sz s_len'
-        (res_off, res_node) = trace $ Trace.traceShow (off, rsnode, (off+s_off_mod), s_sp, s_rpt) $ CR.mergeSubSeq off rsnode (off+s_off_mod) s_sp s_rpt
+        -- (res_off, res_node) = trace $ Trace.traceShow (off, rsnode, (off+s_off_mod), s_sp, s_rpt)
+        (res_off, res_node) = CR.mergeSubSeq off rsnode (off+s_off_mod) s_sp s_rpt
 
     prop_leaf_bound1 ::
       Pos -> RSeqLeafNode -> Pos -> Pos -> NonNeg -> Bool
