@@ -39,9 +39,13 @@ mergeSubSeq ::
   Int ->           -- repetitions of sequence
   (Int, RSeq.Node) -- returns size of new node, new node
 mergeSubSeq rs_off rsnode s_off s_sp s_rpt =
-  (node_len, head nodes)
+  (node_len, result_node nodes)
   where
+    result_node []          = error "this shouldnt happen"
+    result_node (node:[])   = node
+    result_node l           = RSeq.Node 0 (reverse l)
     (node_len, nodes) = RSeq.transform fn [] rsnode
+
     fn _ acc (RSeq.Node rpt _) = 
       RSeq.TxfmCB $ \ch -> (RSeq.Node rpt $ reverse ch):acc
     fn off acc d@(RSeq.Leaf d_sp d_rpt) =
@@ -64,7 +68,9 @@ mergeSubSeq rs_off rsnode s_off s_sp s_rpt =
         themid     = RSeq.Leaf s_sp s_rpt
         thetail    = RSeq.Leaf (d_sp - s_end) 0
 
-        new_node subs = (RSeq.Node d_rpt subs):acc
+        new_node subs
+          | d_rpt > 0    = (RSeq.Node d_rpt subs):acc
+          | otherwise    = (reverse subs) ++ acc
 
 mergeSequence :: RSequence -> S.Sequence -> RSequence
 mergeSequence (RSequence off rt) (S.Sequence s_off s_sp s_rpt) =
@@ -89,7 +95,7 @@ sequenceIntervals seqs =
   foldl (Foldable.foldl process_seq) IvlMap.empty seqs
   where
     process_seq imap (S.Sequence off sp rpt) =
-	  let 
+      let 
         seq_i i = S.Sequence off sp i
         add_seq_to_imap imp i = addSeqToIMap imp $ seq_i i
       in foldl add_seq_to_imap imap (reverse [1..rpt])
