@@ -12,6 +12,7 @@ import Prelude hiding (length)
 import qualified Data.CycleRoll.Sequence as S
 
 import qualified Data.Vector.Unboxed as UV
+import qualified Data.List as List
 
 data Node =
   Leaf { span :: Int, repeat :: Int }
@@ -82,17 +83,22 @@ size =
 
 display :: (Show a, UV.Unbox a) => Int -> UV.Vector a -> Node -> String
 display base_off input rsnode = 
-  snd $ transform fn "" rsnode
+  head . snd $ transform fn [] rsnode
   where
-    slice off sp = show $ UV.toList $ UV.slice (base_off+off) sp input
-    fn off str (Leaf sp rpt)
-      | rpt > 0   = base $ "*" ++ (show (rpt+1))
-      | otherwise = base ""
-      where
-        base suf = TxfmConst $ str ++ (slice off sp) ++ suf
+    slice off sp = 
+      show $ UV.toList $ UV.slice (base_off+off) sp input
+    show_rpt rpt
+      | rpt > 0   = "*" ++ (show (rpt+1))
+      | otherwise = ""
 
-    fn _ str (Node rpt _)
-      | rpt > 0   = base $ "*" ++ (show (rpt+1))
-      | otherwise = base ""
-      where
-        base suf = TxfmCB $ \ch_str -> str ++ "(" ++ ch_str ++ ")" ++ suf
+    fn off sibs (Leaf sp rpt) =
+      TxfmConst $ sibs ++ [(slice off sp) ++ (show_rpt rpt)]
+
+    fn _ sibs (Node rpt _) =
+      TxfmCB $ \ch -> 
+        sibs ++ [
+          "(" ++ 
+          (List.intercalate ", " ch) ++
+          ")" ++ 
+          (show_rpt rpt)
+          ]
