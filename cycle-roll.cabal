@@ -25,7 +25,8 @@ library
     Data.CycleRoll.LCP,
     Data.CycleRoll.SuffixArray,
     Data.CycleRoll.Sequence,
-    Data.CycleRoll.Util
+    Data.CycleRoll.Util,
+    Data.CycleRoll.RSeqNode
   build-depends:    
     base,
     containers,
