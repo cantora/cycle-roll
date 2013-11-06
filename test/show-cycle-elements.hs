@@ -61,3 +61,4 @@ main = do
 
       putStrLn $ "seqs: \n  " ++ (intercalate "\n  " $ map show seqs) ++ "\n"
       putStrLn $ "result: \n  " ++ (intercalate "\n  " $ map show result) ++ "\n"
+      putStrLn $ CR.displaySequences input result

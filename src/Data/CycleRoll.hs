@@ -4,8 +4,13 @@ module Data.CycleRoll (
   roll,
   rSeqNodeLength,
   rSeqNodeSize,
-  foldRSeqNode,
-  mergeSubSeq
+  txfmRSeqNode,
+  TxfmDir(..),
+  foldRSeqLeaves,
+  mergeSubSeq,
+  displayRSeqNode,
+  displayRSequence,
+  displaySequences
   ) where
 
 import qualified Data.CycleRoll.Sequence as S
@@ -15,6 +20,7 @@ import qualified Data.IntervalMap.Lazy as IvlMap
 import qualified Data.IntervalMap.Interval as Ivl
 import qualified Data.List as List
 import qualified Data.Foldable as Foldable
+import qualified Data.Vector.Unboxed as UV
 import Data.Maybe
 --import Debug.Trace
 
@@ -26,26 +32,38 @@ data RSeqNode =
 
 type IntervalMap = IvlMap.IntervalMap Int RSequence
 
-{-
-displayRSeqNode :: (UV.Unbox a) => Int -> UV.Vector a -> RSeqNode -> String
-displayRSeqNode off input (RSeqLeaf sp rpt) = 
-  (show $ UV.toList $ UV.slice off sp input) ++ "*" ++ (show rpt)
-displayRSeqNode off input (RSeqNode rpt subs) =
-  "(" ++ (show $ map (displayRSeqNode  subs)
--}
+displayRSeqNode :: (Show a, UV.Unbox a) => Int -> UV.Vector a -> RSeqNode -> String
+displayRSeqNode base_off input rsnode = 
+  snd $ txfmRSeqNode fn "" rsnode
+  where
+    slice off sp = show $ UV.toList $ UV.slice (base_off+off) sp input
+    fn off str (RSeqLeaf sp rpt)
+      | rpt > 0   = base $ "*" ++ (show (rpt+1))
+      | otherwise = base ""
+      where
+        base suf = TxfmConst $ str ++ (slice off sp) ++ suf
+
+    fn _ str (RSeqNode rpt _)
+      | rpt > 0   = base $ "*" ++ (show (rpt+1))
+      | otherwise = base ""
+      where
+        base suf = TxfmCB $ \ch_str -> str ++ "(" ++ ch_str ++ ")" ++ suf
+
+displayRSequence :: (Show a, UV.Unbox a) => UV.Vector a -> RSequence -> String
+displayRSequence input (RSequence off r) = displayRSeqNode off input r
+
+displaySequences :: (Show a, UV.Unbox a) => UV.Vector a -> [RSequence] -> String
+displaySequences input xs = List.intercalate ", " $ List.map (displayRSequence input) xs
 
 --total length of all the leaf nodes combined
 rSeqNodeLength :: RSeqNode -> Int
 rSeqNodeLength = 
-  fst . (foldRSeqNode (\_ _ _ -> ()) 0 ())
+  fst . (foldRSeqLeaves (\_ _ _ -> ()) ())
 
 --number of leaf nodes in the recursive sequence
 rSeqNodeSize :: RSeqNode -> Int
 rSeqNodeSize = 
-  snd . (foldRSeqNode fn 0 0)
-  where
-    fn _ n (RSeqLeaf _ _) = n+1
-    fn _ n _              = n
+  snd . (foldRSeqLeaves (\_ n _ -> n+1) 0)
 
 rSequenceLength :: RSequence -> Int
 rSequenceLength (RSequence _ rt) = rSeqNodeLength rt
@@ -53,50 +71,90 @@ rSequenceLength (RSequence _ rt) = rSeqNodeLength rt
 --rSequenceSize :: RSequence -> Int
 --rSequenceSize (RSequence _ rt) = rSeqNodeSize rt
 
-foldRSeqNode :: 
-  (Int -> a -> RSeqNode -> a) -> -- start offset, accumulator, node. returns new accumulator
-  Int ->                         -- current offset
-  a ->                           -- base accumulator
-  RSeqNode ->                    -- root node
-  (Int, a)                       -- length of rseq node, accumulator result
-foldRSeqNode fn start_off base r@(RSeqLeaf sp rpt) =
-  (start_off + sp*(rpt+1), fn start_off base r)
-foldRSeqNode fn start_off base r@(RSeqNode rpt subs) = 
-  (start_off + off_diff*(rpt+1), fn start_off result r)
-  where
-    f_fn (curr_off, b) rsnode = foldRSeqNode fn curr_off b rsnode 
-    (new_off, result)         = foldl f_fn (start_off, base) subs
-    off_diff                  = (new_off-start_off)
-	
-mergeSubSeq :: Int -> RSeqNode -> Int -> Int -> Int -> (Int, RSeqNode)
-mergeSubSeq d_off d@(RSeqLeaf d_sp d_rpt) s_off s_sp s_rpt
-  | d_off > s_off        = ret d
-  | s_off >= d_off+d_len = ret d
-  | s_end > d_sp         = ret d
-  | s_len == d_sp        = ret $ RSeqLeaf s_sp $ (d_rpt+1) * (s_rpt+1) - 1
-  | s_off2 == 0          = rseqnode $ themid:thetail:[]
-  | s_end == d_sp        = rseqnode $ thehead:themid:[]
-  | otherwise            = rseqnode $ thehead:themid:thetail:[]
-  where
-    d_len      = rSeqNodeLength d
-    s_off2     = (s_off-d_off) `mod` d_sp
-    s_len      = S.length' s_sp s_rpt
-    s_end      = s_off2 + s_len
-    thehead    = RSeqLeaf s_off2 0
-    themid     = RSeqLeaf s_sp s_rpt
-    thetail    = RSeqLeaf (d_sp - s_end) 0
-    ret x      = (d_len, x)
-    rseqnode s = ret $ RSeqNode d_rpt s
+data TxfmDir a = TxfmConst a       -- use 'a' value as new accumulator, dont process children
+                 | TxfmCB (a -> a) -- pass processed children to function, 
+                                   -- process children using default accumulator
+                 | TxfmPair a (a -> a)
 
-mergeSubSeq d_off (RSeqNode d_rpt subs) s_off s_sp s_rpt =
-  (d_len*(d_rpt+1), RSeqNode d_rpt $ reverse new_subseqs)
+txfmRSeqNode ::
+  ( Int ->         -- current offset
+    a ->           -- accumulator
+    RSeqNode ->    -- current node
+    TxfmDir a) ->  -- directive which specifies how to process children
+  a ->           -- accumulator
+  RSeqNode ->    -- root node
+  (Int, a)       -- final offset of node, accumulator result
+txfmRSeqNode fn base_acc rsnode =
+  visit 0 0 base_acc rsnode
   where
-    f_fn (l, ss) rsnode  = 
-      let 
-        (new_l, new_node) = mergeSubSeq (d_off+l) rsnode s_off s_sp s_rpt
-      in (l+new_l, new_node:ss)
-    
-    (d_len, new_subseqs) = foldl f_fn (0, []) subs
+    recurse off (sz, acc) n = visit off sz acc n
+
+    visit off sz acc r@(RSeqLeaf sp rpt) =
+      (sz + (S.length' sp rpt), result tdir)
+      where
+        tdir = fn (off+sz) acc r
+        result (TxfmConst new_acc) = new_acc
+        result (TxfmCB cb)         = cb base_acc
+        result (TxfmPair base cb)  = cb base
+
+    visit off sz acc r@(RSeqNode rpt subs) =
+      (sz + (S.length' rlen rpt), acc_result)
+      where
+        tdir = fn (off+sz) acc r
+        (rlen, acc_result) = result tdir
+        ch_result cb base =
+          (\(rl, a) -> (rl, cb a)) $ foldl (recurse (off+sz)) (0, base) subs
+        result (TxfmConst new_acc)    = (fst $ ch_result id base_acc, new_acc)
+        result (TxfmCB cb)            = ch_result cb base_acc
+        result (TxfmPair new_base cb) = ch_result cb new_base
+
+foldRSeqLeaves :: 
+  ( Int ->       -- current offset
+    a ->         -- accumulator
+    RSeqNode ->  -- current node
+    a) ->        -- returns new accumulator
+  a ->           -- accumulator
+  RSeqNode ->    -- root node
+  (Int, a)       -- length of node, accumulator result
+foldRSeqLeaves fn base rsnode =
+  txfmRSeqNode vfn base rsnode
+  where
+    vfn curr_off acc r@(RSeqLeaf _ _) = TxfmConst $ fn curr_off acc r
+    vfn _        acc _                = TxfmPair acc id
+
+mergeSubSeq :: 
+  Int ->          -- offset of node
+  RSeqNode ->     -- node
+  Int ->          -- offset of sequence
+  Int ->          -- span of sequence
+  Int ->          -- repetitions of sequence
+  (Int, RSeqNode) -- returns size of new node, new node
+mergeSubSeq rs_off rsnode s_off s_sp s_rpt =
+  (node_len, head nodes)
+  where
+    (node_len, nodes) = txfmRSeqNode fn [] rsnode
+    fn _ acc (RSeqNode rpt _) = TxfmCB $ \ch ->
+      (RSeqNode rpt $ reverse ch):acc
+    fn off acc d@(RSeqLeaf d_sp d_rpt) = TxfmConst $ leaf_fn off acc d d_sp d_rpt
+    leaf_fn off acc d d_sp d_rpt
+      | d_off > s_off
+        || s_off >= d_off+d_len 
+        || s_end > d_sp          = d:acc
+      | s_len == d_sp            = (RSeqLeaf s_sp $ (d_rpt+1) * (s_rpt+1) - 1):acc
+      | s_off2 == 0              = new_node $ themid:thetail:[]
+      | s_end == d_sp            = new_node $ thehead:themid:[]
+      | otherwise                = new_node $ thehead:themid:thetail:[]
+      where
+        d_off      = rs_off + off
+        d_len      = rSeqNodeLength d
+        s_off2     = (s_off-d_off) `mod` d_sp
+        s_len      = S.length' s_sp s_rpt
+        s_end      = s_off2 + s_len
+        thehead    = RSeqLeaf s_off2 0
+        themid     = RSeqLeaf s_sp s_rpt
+        thetail    = RSeqLeaf (d_sp - s_end) 0
+
+        new_node subs = (RSeqNode d_rpt subs):acc
 
 mergeSequence :: RSequence -> S.Sequence -> RSequence
 mergeSequence (RSequence off rt) (S.Sequence s_off s_sp s_rpt) =

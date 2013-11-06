@@ -15,9 +15,9 @@ import Test.QuickCheck
 import Control.Monad
 import qualified Data.List as List
 
---import qualified Debug.Trace as Trace
---trace :: (Show a) => a -> a
---trace x = Trace.trace (show x) x
+import qualified Debug.Trace as Trace
+trace :: (Show a) => a -> a
+trace x = Trace.trace (show x) x
 
 group = 
   testGroup "CycleRoll" [
@@ -112,73 +112,66 @@ instance Arbitrary RSeqNodeWSz where
 
 rSeqNode_group = 
   testGroup "rSeqNode" [
-    testProperty "len"         prop_len,
-    testProperty "fold_eq_len" prop_fold_eq_len,
-    testProperty "fold_offset" prop_fold_offset,
-    testCase     "fold_test1"  fold_test1
+    testProperty "len"          prop_len,
+    testProperty "txfm_eq_len"  prop_txfm_eq_len,
+    testCase     "txfm_test1"   txfm_test1
     ]
   where
     prop_len :: RSeqNodeWSz -> Bool
     prop_len (RSeqNodeWSz sz rsnode) = 
-      sz == (CR.rSeqNodeLength rsnode)
+      sz == CR.rSeqNodeLength rsnode
 
-    prop_fold_eq_len :: RSeqNodeWSz -> Bool
-    prop_fold_eq_len (RSeqNodeWSz sz rsnode) = 
+    prop_txfm_eq_len :: RSeqNodeWSz -> Bool
+    prop_txfm_eq_len (RSeqNodeWSz sz rsnode) = 
       let
-        fn _ lvs leaf@(CR.RSeqLeaf _ _) = leaf:lvs
-        fn _ lvs _                      = lvs
-        folded = CR.foldRSeqNode fn 0 [] rsnode
-      in (CR.rSeqNodeLength rsnode) == fst folded
+        fn _ _ _ = CR.TxfmConst ()
+        result   = CR.txfmRSeqNode fn () rsnode
+      in sz == fst result
 
-    prop_fold_offset :: Int -> RSeqNodeWSz -> Bool
-    prop_fold_offset start_off (RSeqNodeWSz sz rsnode) = 
-      let
-        fn _ lvs leaf@(CR.RSeqLeaf _ _) = leaf:lvs
-        fn _ lvs _                      = lvs
-        folded = fst $ CR.foldRSeqNode fn start_off [] rsnode
-      in (start_off + (CR.rSeqNodeLength rsnode)) == folded
-
-    fold_test1 =
+    txfm_test1 =
       let 
         mp = 
           [
-              0, 
-                  4,
-                  4+4,
-                4,
-                (8+4)+8,
+            0,
+              0,
               4,
+                4,
+                  4,                
+                  4+4,
+                (8+4)+8,
               4+5*(8*2 + 6*3),
-                174 + 3,
-                  177 + 5*4,
-                  197 + 3*2,
-                177 + 5*4,
               174+3,
-            0
+                174+3,
+                177+5*4,
+                  177 + 5*4,
+                  197 + 3*2
             ]
 
         rseq = 
-          CR.RSeqNode 0 [
-            CR.RSeqLeaf 2 1,     -- 0
-            CR.RSeqNode 4 [
-              CR.RSeqNode 1 [
-                CR.RSeqLeaf 4 0, -- 4
-                CR.RSeqLeaf 1 3  -- 8
-                ], -- 4
-              CR.RSeqLeaf 6 2    -- (8+4)+8
-              ], -- 4
-            CR.RSeqLeaf 3 0,     -- 4+5*(8*2 + 6*3)
-            CR.RSeqNode 1 [
-              CR.RSeqLeaf 5 3,   -- 174+3
-              CR.RSeqNode 3 [    
-                CR.RSeqLeaf 3 1, -- 177+5*4
-                CR.RSeqLeaf 2 3  -- 197+3*2
-                ] -- 177 + 5*4
-              ] -- 174+3
-            ] -- 0
+          CR.RSeqNode 0 [        -- 0
+            CR.RSeqLeaf 2 1,          -- 0
+            CR.RSeqNode 4 [      -- 4
+              CR.RSeqNode 1 [    -- 4
+                CR.RSeqLeaf 4 0,      -- 4
+                CR.RSeqLeaf 1 3       -- 8
+                ],
+              CR.RSeqLeaf 6 2         -- (8+4)+8
+              ], 
+            CR.RSeqLeaf 3 0,          -- 4+5*(8*2 + 6*3)
+            CR.RSeqNode 1 [      -- 174+3
+              CR.RSeqLeaf 5 3,        -- 174+3
+              CR.RSeqNode 3 [    -- 177 + 5*4
+                CR.RSeqLeaf 3 1,      -- 177+5*4
+                CR.RSeqLeaf 2 3       -- 197+3*2
+                ] 
+              ] 
+            ] 
 
-        fn off (idx, bl) _ = (idx+1, bl && (mp List.!! idx) == off)
-      in (13, True) @=? (snd $ CR.foldRSeqNode fn 0 (0, True) rseq)
+        fn off (idx, bl) (CR.RSeqLeaf _ _) = 
+          CR.TxfmConst (idx+1, bl && (mp List.!! idx) == off)
+        fn off (idx, bl) _ = 
+          CR.TxfmPair (idx+1, bl && (mp List.!! idx) == off) id
+      in (13, True) @=? (snd $ CR.txfmRSeqNode fn (0, True) rseq)
 
 
 data RSeqLeafNode = RSeqLeafNode CR.RSeqNode deriving (Show, Eq, Ord)
@@ -221,6 +214,7 @@ mergeSubSeq_group =
         leaf_tpl _                    = error "expected a leaf"
 
         (s_sp, s_rpt)       = leaf_tpl $ makeRSeqLeaf sz s_len'
+        -- (res_off, res_node) = trace $ Trace.traceShow (off, rsnode, (off+s_off_mod), s_sp, s_rpt)
         (res_off, res_node) = CR.mergeSubSeq off rsnode (off+s_off_mod) s_sp s_rpt
 
     prop_leaf_bound1 ::
