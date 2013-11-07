@@ -19,10 +19,11 @@ data Node =
   | Node { repeat :: Int, subseqs :: [Node] }
   deriving (Show, Eq, Ord)
 
-data TxfmDir a = TxfmConst a       -- use 'a' value as new accumulator, dont process children
-                 | TxfmCB (a -> a) -- pass processed children to function, 
-                                   -- process children using default accumulator
-                 | TxfmPair a (a -> a)
+data TxfmDir a = TxfmConst a           -- use 'a' value as new accumulator, dont process children
+                 | TxfmCB (a -> a)     -- pass processed children to function, 
+                                       --   process children using default accumulator
+                 | TxfmPair a (a -> a) -- pass processed children to function, process
+                                       --   children using provided accumulator
 
 transform ::
   ( Int ->         -- current offset

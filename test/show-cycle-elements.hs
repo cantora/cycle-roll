@@ -4,7 +4,6 @@ import qualified Data.CycleRoll as CR
 import qualified Data.CycleRoll.LCP as LCP
 import qualified Data.CycleRoll.SuffixArray as SA
 import qualified Data.CycleRoll.Sequence as Seq
-import qualified Data.CycleRoll.Util as Util
 
 import System.Environment
 import Data.List
@@ -51,7 +50,7 @@ main = do
         merged_grps = LCP.mergedGroups $ LCP.groups sa lcps
         lcp_strs    = map (("        "++) . show) $ UV.toList lcps
         seqs        = Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
-        all_seqs    = concat $ map Util.listFromHeap $ seqs
+        all_seqs    = concat $ map Foldable.toList $ seqs
         result      = CR.roll (UV.length input) seqs
         -- display result = map disp_rseq result
 

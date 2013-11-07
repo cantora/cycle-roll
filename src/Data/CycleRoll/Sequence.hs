@@ -5,12 +5,11 @@ import Prelude hiding (
   )
 
 import qualified Data.CycleRoll.LCP as LCP
-import qualified Data.CycleRoll.Util as Util
 
 import qualified Data.Heap as Heap
 import qualified Data.Foldable as Foldable
 
-import Debug.Trace
+--import Debug.Trace
 import Data.List
 
 data Sequence = 
@@ -50,13 +49,13 @@ lcpGroupSequences lcp_rmq (LCP.Group lcp memb) =
           | Heap.null ps        = base
           | target > src_idx    = base
           | target < src_idx    = recurse next_ss next_ps
-          | prefixes_match      = debug "3" (Heap.insert ext_partial next_ps, new_seqs)
-          | otherwise           = debug "4" (Heap.insert new_partial next_ps, next_ss)
+          | prefixes_match      = (Heap.insert ext_partial next_ps, new_seqs)
+          | otherwise           = (Heap.insert new_partial next_ps, next_ss)
           where
             next_ps     = Heap.deleteMin ps
             new_partial = (src_idx+lcp, sa_idx, Sequence src_idx lcp 0)
             base_ps     = Heap.insert new_partial ps
-            base        = debug "0/1" (base_ps, new_seqs)
+            base        = (base_ps, new_seqs)
 
             (target, sa_idx2, seqnce@(Sequence off sp rpt)) = Heap.minimum ps
 
@@ -64,8 +63,8 @@ lcpGroupSequences lcp_rmq (LCP.Group lcp memb) =
             ext_partial    = (src_idx+lcp, sa_idx, Sequence off sp (rpt+1))
             prefixes_match = (lcp_rmq sa_idx sa_idx2 lcp)
 
-            show_tpl (a,b)  = "seqs=" ++ (show b) ++ "\n--" ++ (intercalate "\n--" $ Util.mapHeap show a)
-            debug tag tpl   = tpl -- trace ("(" ++ tag ++ ") processed " ++ (show (src_idx, sa_idx)) ++ ": " ++ (show_tpl tpl)) tpl
+            --show_tpl (a,b)  = "seqs=" ++ (show b) ++ "\n--" ++ (intercalate "\n--" $ Util.mapHeap show a)
+            --debug tag tpl   = tpl -- trace ("(" ++ tag ++ ") processed " ++ (show (src_idx, sa_idx)) ++ ": " ++ (show_tpl tpl)) tpl
 
 
 sequences :: Int -> [LCP.Group] -> (Int -> Int -> Int -> Bool) -> [Heap.Heap Sequence]
