@@ -7,10 +7,12 @@ import Prelude hiding (
 import qualified Data.CycleRoll.SuffixArray as SA
 
 import Data.Vector.Unboxed hiding (find, sum)
+import qualified Data.Vector.Primitive as PV
 import qualified Data.List as List
 import qualified Data.Heap as Heap
 import qualified Data.Map as Map
 import qualified Data.Foldable as Foldable
+import qualified Data.RangeMin as RangeMin
 
 find :: (Eq a, Unbox a, Num b) => Vector a -> Vector a -> b
 find v w
@@ -31,15 +33,19 @@ array v suf_arr
       where
         suffix = SA.entry v suf_arr
 
-rmq :: Vector Int -> Int -> Int -> Int -> Bool
-rmq lcparr idx1 idx2 min_val 
-  | null lcparr    = error "empty lcp array"
-  | idx1 == idx2   = error $ (show idx1) List.++ " = idx1 == idx2 = " List.++ (show idx2)
-  | idx1 < idx2    = not $ List.any rmq_test [idx1..(idx2-1)]
-  | otherwise      = rmq lcparr idx2 idx1 min_val
+rmq :: Vector Int -> (Int -> Int -> Int -> Bool)
+rmq lcparr = 
+  ret_fn $ RangeMin.intRangeMin pv_lcparr
   where
-    rmq_test i = lcparr!i < min_val
-
+    pv_lcparr :: PV.Vector Int
+    pv_lcparr = PV.convert lcparr
+    ret_fn rmq_fn idx1 idx2 min_val
+      | idx1 == idx2   = error $ (show idx1) List.++ " = idx1 == idx2 = " List.++ (show idx2)
+      | idx1 < idx2    = not . test $ rmq_fn idx1 (idx2-idx1)
+      | otherwise      = ret_fn rmq_fn idx2 idx1 min_val
+      where
+        test i = lcparr!i < min_val
+    
 data GroupElem = 
   GroupElem { 
     srcIdx :: Int,

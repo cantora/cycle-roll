@@ -10,7 +10,6 @@ import qualified Data.Heap as Heap
 import qualified Data.Foldable as Foldable
 
 --import Debug.Trace
-import Data.List
 
 data Sequence = 
   Sequence {

@@ -31,9 +31,9 @@ library
     containers,
     heaps,
     vector,
-    vector-algorithms,
     suffixarray,
-    IntervalMap
+    IntervalMap,
+    rangemin
   ghc-options:      
     -Wall
     -O2
@@ -50,6 +50,7 @@ test-suite tests
     vector-algorithms,
     suffixarray,
     IntervalMap,
+    rangemin,
     HUnit,
     QuickCheck,
     test-framework,
