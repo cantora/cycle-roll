@@ -16,6 +16,7 @@ import Test.HUnit
 import Test.QuickCheck
 import Control.Monad
 import qualified Data.List as List
+import qualified Data.Sequence as DSeq
 
 --import qualified Debug.Trace as Trace
 --trace :: (Show a) => a -> a
@@ -145,8 +146,10 @@ mergeSubSeq_group =
         subs_amt            = RSeq.size
 
         rsleaf_tpl (RSeq.Leaf sp rpt) = (sp, rpt)
-        mid (RSeq.Node _ (x:xs))      = rsleaf_tpl x
-        end (RSeq.Node _ (_:x:xs))    = rsleaf_tpl x
+        rsleaf_tpl _                  = error "expected a leaf"
+
+        mid (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 0
+        end (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 1
 
     prop_end_is_sp ::
       NonNeg -> Pos -> NonNeg -> NonNeg -> Pos -> NonNeg -> Bool      
@@ -169,8 +172,10 @@ mergeSubSeq_group =
         subs_amt            = RSeq.size
 
         rsleaf_tpl (RSeq.Leaf sp rpt) = (sp, rpt)
-        hd (RSeq.Node _ (x:xs))       = rsleaf_tpl x
-        mid (RSeq.Node _ (_:x:xs))    = rsleaf_tpl x
+        rsleaf_tpl _                  = error "expected a leaf"
+
+        hd  (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 0
+        mid (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 1
 
     prop_seq_in_mid ::
       NonNeg -> Pos -> NonNeg -> NonNeg -> Pos -> NonNeg -> Bool      
@@ -198,7 +203,8 @@ mergeSubSeq_group =
         s_end               = s_off_mod' + (s_sp*(s_rpt+1))
 
         rsleaf_tpl (RSeq.Leaf sp rpt) = (sp, rpt)
-        hd (RSeq.Node _ (x:xs))       = rsleaf_tpl x
-        mid (RSeq.Node _ (_:x:xs))    = rsleaf_tpl x
-        end (RSeq.Node _ (_:_:x:xs))  = rsleaf_tpl x
+        rsleaf_tpl _                  = error "expected a leaf"
 
+        hd  (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 0
+        mid (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 1
+        end (RSeq.Node _ subs)        = rsleaf_tpl $ DSeq.index subs 2

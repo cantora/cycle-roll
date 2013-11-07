@@ -19,7 +19,7 @@ main = do
   let empty_test_opts = mempty :: TestOptions
   let my_test_opts = empty_test_opts {
     --topt_maximum_test_size       = Just 99,
-    topt_maximum_generated_tests = Just 99 --99
+    topt_maximum_generated_tests = Just 9999
   }
   let empty_runner_opts = mempty :: RunnerOptions
   let my_runner_opts = empty_runner_opts {

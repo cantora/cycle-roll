@@ -8,15 +8,18 @@ module Data.CycleRoll.RSeqNode (
   display
   ) where
 
-import Prelude hiding (length)
+import Prelude hiding (length, foldl)
+
 import qualified Data.CycleRoll.Sequence as S
 
+import Data.Foldable (foldl)
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.List as List
+import qualified Data.Sequence as DSeq
 
 data Node =
   Leaf { span :: Int, repeat :: Int }
-  | Node { repeat :: Int, subseqs :: [Node] }
+  | Node { repeat :: Int, subseqs :: DSeq.Seq Node }
   deriving (Show, Eq, Ord)
 
 data TxfmDir a = TxfmConst a           -- use 'a' value as new accumulator, dont process children

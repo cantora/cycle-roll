@@ -7,12 +7,15 @@ import Prelude hiding (length)
 import Data.CycleRoll.RSeqNode
 import Test.Utils
 
+import qualified Data.Sequence as DSeq
+
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2
 import Test.HUnit
 import Test.QuickCheck
 
+sl = DSeq.fromList
 
 group = 
   testGroup "RSeqNode tests" [
@@ -57,21 +60,21 @@ node_group =
             ]
 
         rseq = 
-          Node 0 [        -- 0
-            Leaf 2 1,          -- 0
-            Node 4 [      -- 4
-              Node 1 [    -- 4
-                Leaf 4 0,      -- 4
-                Leaf 1 3       -- 8
+          Node 0 $ sl [        -- 0
+            Leaf 2 1,               -- 0
+            Node 4 $ sl [      -- 4
+              Node 1 $ sl [    -- 4
+                Leaf 4 0,           -- 4
+                Leaf 1 3            -- 8
                 ],
-              Leaf 6 2         -- (8+4)+8
+              Leaf 6 2              -- (8+4)+8
               ], 
-            Leaf 3 0,          -- 4+5*(8*2 + 6*3)
-            Node 1 [      -- 174+3
-              Leaf 5 3,        -- 174+3
-              Node 3 [    -- 177 + 5*4
-                Leaf 3 1,      -- 177+5*4
-                Leaf 2 3       -- 197+3*2
+            Leaf 3 0,               -- 4+5*(8*2 + 6*3)
+            Node 1 $ sl [      -- 174+3
+              Leaf 5 3,             -- 174+3
+              Node 3 $ sl [    -- 177 + 5*4
+                Leaf 3 1,           -- 177+5*4
+                Leaf 2 3            -- 197+3*2
                 ] 
               ] 
             ] 

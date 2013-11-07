@@ -8,7 +8,8 @@ import Data.CycleRoll.RSeqNode as RSeq
 
 import Control.Monad
 import Test.QuickCheck
-
+import qualified Data.Sequence as DSeq
+import Data.Sequence ((<|), (|>), (><))
 
 makeRSeqLeaf :: Int -> Int -> RSeq.Node
 makeRSeqLeaf n m =
@@ -36,9 +37,9 @@ instance Arbitrary RSeqNodeWSz where
 
       make_subs parent_sz max_amt amt total
         | total > parent_sz  = fail "total exceeds parent size!"
-        | total == parent_sz = return (total, [])
+        | total == parent_sz = return (total, DSeq.empty)
         | max_amt < amt      = fail "amt exceeds max amt"
-        | max_amt == amt     = return (total, [])
+        | max_amt == amt     = return (total, DSeq.empty)
         | otherwise          = make_subs'
         where
           recurse sz = 
@@ -47,7 +48,7 @@ instance Arbitrary RSeqNodeWSz where
             sz  <- choose (1, parent_sz-total)
             sub <- make sz
             (accum_sz, subs) <- recurse sz
-            return (accum_sz, sub:subs)
+            return (accum_sz, sub <| subs)
 
       find_rpt n m =
         recurse 0
@@ -63,21 +64,26 @@ instance Arbitrary RSeqNodeWSz where
               m'     = m+x
               (q, r) = n `quotRem` m'
 
-      make_node n = do
-        max_amt <- choose (2, n)
-        (used, subs) <- make_subs n max_amt 0 0
-        let (rpt, remain) = find_rpt n used
-        if (remain > 0)
-          then do
-            extra <- make remain
-            return $ RSeq.Node rpt $ extra:subs
-          else 
-            return $ case subs of 
-              ((RSeq.Node subs_rpt subs_subs):[])
-                -> RSeq.Node ((subs_rpt+1)*(rpt+1) - 1) subs_subs
-              ((Leaf subs_sp subs_rpt):[])
-                -> Leaf subs_sp $ (subs_rpt+1)*(rpt+1) - 1
-              _ -> RSeq.Node rpt subs
+      make_node n = 
+        do
+          max_amt <- choose (2, n)
+          (used, subs) <- make_subs n max_amt 0 0
+          let (rpt, remain) = find_rpt n used
+          if (remain > 0)
+            then do
+              extra <- make remain
+              return $ RSeq.Node rpt $ subs |> extra
+            else 
+              return $ case (DSeq.length subs) of 
+                0 -> error "expected at least one subseq"
+                1 -> promote rpt $ DSeq.index subs 0
+                _ -> RSeq.Node rpt subs
+         where
+           combine p_rpt rpt = (rpt+1)*(p_rpt+1) - 1
+           promote p_rpt (RSeq.Node rpt subs) = 
+             RSeq.Node (p_rpt `combine` rpt) subs
+           promote p_rpt (Leaf sp rpt) = 
+             Leaf sp $ p_rpt `combine` rpt
 
       make 0 = fail "cant make rseqnode with 0 size"
       make 1 = makeRSeqLeafGen 1
