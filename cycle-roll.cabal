@@ -10,22 +10,16 @@ description:        compress the cycles into cycle rolls.
 cabal-version:      >=1.8
 build-type:         Simple
 
-executable show-cycle-elements
-  main-is: test/show-cycle-elements.hs
-  build-depends:
-    base,
-    vector,
-    cycle-roll,
-    heaps
-
 library
   hs-source-dirs:   src
   exposed-modules:  
-    Data.CycleRoll,
+    Data.CycleRoll
+  other-modules:
     Data.CycleRoll.LCP,
     Data.CycleRoll.SuffixArray,
     Data.CycleRoll.Sequence,
-    Data.CycleRoll.RSeqNode
+    Data.CycleRoll.RSeqNode,
+    Data.CycleRoll.SubSeq
   build-depends:
     base,
     containers,
@@ -56,3 +50,16 @@ test-suite tests
     test-framework,
     test-framework-hunit,
     test-framework-quickcheck2
+
+test-suite show-cycle-elements
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test, src
+  main-is:          show-cycle-elements.hs
+  build-depends:
+    base,
+    containers,
+    heaps,
+    vector,
+    suffixarray,
+    IntervalMap,
+    rangemin
