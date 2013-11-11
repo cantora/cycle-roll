@@ -13,6 +13,7 @@ import Data.CycleRoll.LCPTest as LCPTest
 import Data.CycleRoll.SuffixArrayTest as SATest
 import Data.CycleRoll.RSeqNodeTest as RSeqNodeTest
 import Data.CycleRoll.SubSeqTest as SubSeqTest
+import Data.CycleRoll.PrepareTest as PrepareTest
 import Data.CycleRoll.Test as CycleRollTest
 
 main :: IO ()
@@ -35,5 +36,6 @@ tests = [
   LCPTest.group,
   RSeqNodeTest.group,
   SubSeqTest.group,
+  PrepareTest.group,
   CycleRollTest.group
   ]

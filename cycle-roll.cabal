@@ -19,7 +19,8 @@ library
     Data.CycleRoll.SuffixArray,
     Data.CycleRoll.Sequence,
     Data.CycleRoll.RSeqNode,
-    Data.CycleRoll.SubSeq
+    Data.CycleRoll.SubSeq,
+    Data.CycleRoll.Prepare
   build-depends:
     base,
     containers,
@@ -27,7 +28,9 @@ library
     vector,
     suffixarray,
     IntervalMap,
-    rangemin
+    rangemin,
+    pipes,
+    primitive
   ghc-options:      
     -Wall
     -O2
@@ -41,10 +44,11 @@ test-suite tests
     containers,
     heaps,
     vector,
-    vector-algorithms,
     suffixarray,
     IntervalMap,
     rangemin,
+    pipes,
+    primitive,
     HUnit,
     QuickCheck,
     test-framework,
@@ -62,4 +66,6 @@ test-suite show-cycle-elements
     vector,
     suffixarray,
     IntervalMap,
-    rangemin
+    rangemin,
+    pipes,
+    primitive

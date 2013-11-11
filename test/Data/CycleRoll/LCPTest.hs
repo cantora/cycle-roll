@@ -7,6 +7,7 @@ import Prelude hiding (
   )
 import qualified Data.CycleRoll.LCP as LCP
 import qualified Data.CycleRoll.SuffixArray as SA
+import Test.Utils
 
 import Data.Vector.Unboxed
 import Test.QuickCheck
@@ -22,19 +23,6 @@ group =
     find_group,
     array_group
     ]
-
-instance (Arbitrary a, Unbox a) => Arbitrary (Vector a) where
-  arbitrary    = fmap fromList arbitrary
-
-newtype NonEmptyVector a = 
-  NonEmptyVector { getNonEmptyVector :: Vector a }
-  deriving (Show)
-
-fromNonEmptyList :: (Unbox a) => NonEmptyList a -> NonEmptyVector a
-fromNonEmptyList (NonEmpty xs) = NonEmptyVector $ fromList xs
-
-instance (Arbitrary a, Unbox a) => Arbitrary (NonEmptyVector a) where
-  arbitrary    = fmap fromNonEmptyList arbitrary
 
 find_group = 
   testGroup "find" [

@@ -1,7 +1,8 @@
 module Test.Utils (
   makeRSeqLeaf,
   makeRSeqLeafGen,
-  RSeqNodeWSz(..)
+  RSeqNodeWSz(..),
+  NonEmptyVector(..)
   ) where
 
 import Data.CycleRoll.RSeqNode as RSeq
@@ -10,6 +11,20 @@ import Control.Monad
 import Test.QuickCheck
 import qualified Data.Sequence as DSeq
 import Data.Sequence ((<|), (|>), (><))
+import qualified Data.Vector.Unboxed as UV
+
+instance (Arbitrary a, UV.Unbox a) => Arbitrary (UV.Vector a) where
+  arbitrary    = fmap UV.fromList arbitrary
+
+newtype NonEmptyVector a = 
+  NonEmptyVector { getNonEmptyVector :: UV.Vector a }
+  deriving (Show)
+
+fromNonEmptyList :: (UV.Unbox a) => NonEmptyList a -> NonEmptyVector a
+fromNonEmptyList (NonEmpty xs) = NonEmptyVector $ UV.fromList xs
+
+instance (Arbitrary a, UV.Unbox a) => Arbitrary (NonEmptyVector a) where
+  arbitrary    = fmap fromNonEmptyList arbitrary
 
 makeRSeqLeaf :: Int -> Int -> RSeq.Node
 makeRSeqLeaf n m =
