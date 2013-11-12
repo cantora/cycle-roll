@@ -1,8 +1,9 @@
-module Data.CycleRoll.SuffixArrayTest (
+module Data.CycleRoll.Internal.SuffixArrayTest (
   group
   ) where
 
-import qualified Data.CycleRoll.SuffixArray as SA
+import qualified Data.CycleRoll.Internal.SuffixArray as SA
+
 import Data.Vector.Unboxed
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2

@@ -1,12 +1,11 @@
-module Data.CycleRoll.PrepareTest (
+module Data.CycleRoll.Internal.PrepareTest (
   group
   ) where
 
 import Prelude hiding (
   length, (++), null, head, tail
   )
-import qualified Data.CycleRoll.Prepare as Prepare
-import qualified Data.CycleRoll.SuffixArray as SA
+import qualified Data.CycleRoll.Internal.Prepare as Prepare
 import Test.Utils
 
 import Data.Vector.Unboxed

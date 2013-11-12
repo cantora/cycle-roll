@@ -1,10 +1,10 @@
-module Data.CycleRoll.Sequence where
+module Data.CycleRoll.Internal.Sequence where
 
 import Prelude hiding (
   length
   )
 
-import qualified Data.CycleRoll.LCP as LCP
+import qualified Data.CycleRoll.Internal.LCP as LCP
 
 import qualified Data.Heap as Heap
 import qualified Data.Foldable as Foldable

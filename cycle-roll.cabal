@@ -10,17 +10,50 @@ description:        compress the cycles into cycle rolls.
 cabal-version:      >=1.8
 build-type:         Simple
 
+executable cycle-roll
+  build-depends:
+    base,
+    containers,
+    heaps,
+    vector,
+    suffixarray,
+    IntervalMap,
+    rangemin,
+    pipes,
+    primitive
+  main-is:          cycle-roll.hs
+  hs-source-dirs:   ., src
+
+executable show-cycle-elements
+  hs-source-dirs:   ., src
+  main-is:          show-cycle-elements.hs
+  build-depends:
+    base,
+    containers,
+    heaps,
+    vector,
+    suffixarray,
+    IntervalMap,
+    rangemin,
+    pipes,
+    primitive
+
 library
   hs-source-dirs:   src
   exposed-modules:  
-    Data.CycleRoll
-  other-modules:
-    Data.CycleRoll.LCP,
-    Data.CycleRoll.SuffixArray,
-    Data.CycleRoll.Sequence,
-    Data.CycleRoll.RSeqNode,
-    Data.CycleRoll.SubSeq,
+    Data.CycleRoll,
     Data.CycleRoll.Prepare
+    Data.CycleRoll.RSequence,
+    Data.CycleRoll.RSequence.Node
+  other-modules:
+    Data.CycleRoll.Internal.LCP,
+    Data.CycleRoll.Internal.SuffixArray,
+    Data.CycleRoll.Internal.Sequence,
+    Data.CycleRoll.Internal.RSequence,
+    Data.CycleRoll.Internal.RSequence.Node,
+    Data.CycleRoll.Internal.SubSeq,
+    Data.CycleRoll.Internal.Prepare,
+    Data.CycleRoll.Internal.Algorithm
   build-depends:
     base,
     containers,
@@ -54,18 +87,3 @@ test-suite tests
     test-framework,
     test-framework-hunit,
     test-framework-quickcheck2
-
-test-suite show-cycle-elements
-  type:             exitcode-stdio-1.0
-  hs-source-dirs:   test, src
-  main-is:          show-cycle-elements.hs
-  build-depends:
-    base,
-    containers,
-    heaps,
-    vector,
-    suffixarray,
-    IntervalMap,
-    rangemin,
-    pipes,
-    primitive

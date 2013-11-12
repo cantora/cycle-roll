@@ -1,10 +1,10 @@
-module Data.CycleRoll.SubSeqTest (
+module Data.CycleRoll.Internal.SubSeqTest (
   group
   ) where
 
 import Test.Utils -- our common testing stuff
-import qualified Data.CycleRoll.RSeqNode as RSeq
-import qualified Data.CycleRoll.SubSeq as SubSeq
+import qualified Data.CycleRoll.Internal.RSequence.Node as RSeq
+import qualified Data.CycleRoll.Internal.SubSeq as SubSeq
 
 import qualified Data.Sequence as DSeq
 import qualified Data.List as List

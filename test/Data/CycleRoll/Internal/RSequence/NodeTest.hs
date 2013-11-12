@@ -1,10 +1,10 @@
-module Data.CycleRoll.RSeqNodeTest (
+module Data.CycleRoll.Internal.RSequence.NodeTest (
   group
   ) where
 
 import Prelude hiding (length)
 
-import Data.CycleRoll.RSeqNode
+import Data.CycleRoll.Internal.RSequence.Node
 import Test.Utils
 
 import qualified Data.Sequence as DSeq

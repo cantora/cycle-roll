@@ -1,9 +1,10 @@
 module Main where
 
-import qualified Data.CycleRoll as CR
-import qualified Data.CycleRoll.LCP as LCP
-import qualified Data.CycleRoll.SuffixArray as SA
-import qualified Data.CycleRoll.Sequence as Seq
+import qualified Data.CycleRoll.Internal.LCP as LCP
+import qualified Data.CycleRoll.Internal.SuffixArray as SA
+import qualified Data.CycleRoll.Internal.Sequence as Seq
+import qualified Data.CycleRoll.Internal.Algorithm as Algorithm
+import qualified Data.CycleRoll.RSequence as RSequence
 
 import System.Environment
 import Data.List
@@ -51,7 +52,7 @@ main = do
         lcp_strs    = map (("        "++) . show) $ UV.toList lcps
         seqs        = Seq.sequences (UV.length input) merged_grps $ LCP.rmq lcps
         all_seqs    = concat $ map Foldable.toList $ seqs
-        result      = CR.roll (UV.length input) seqs
+        result      = Algorithm.roll (UV.length input) seqs
         -- display result = map disp_rseq result
 
       putStrLn $ "input: " ++ str
@@ -60,4 +61,4 @@ main = do
 
       putStrLn $ "seqs: \n  " ++ (intercalate "\n  " $ map show seqs) ++ "\n"
       putStrLn $ "result: \n  " ++ (intercalate "\n  " $ map show result) ++ "\n"
-      putStrLn $ CR.displaySequences input result
+      putStrLn $ RSequence.displayList input result

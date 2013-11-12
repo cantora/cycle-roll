@@ -1,4 +1,4 @@
-module Data.CycleRoll.RSeqNode (
+module Data.CycleRoll.Internal.RSequence.Node (
   Node(..),
   length,
   size,
@@ -10,7 +10,7 @@ module Data.CycleRoll.RSeqNode (
 
 import Prelude hiding (length, foldl)
 
-import qualified Data.CycleRoll.Sequence as S
+import qualified Data.CycleRoll.Internal.Sequence as S
 
 import Data.Foldable (foldl)
 import qualified Data.Vector.Unboxed as UV

@@ -5,7 +5,7 @@ module Test.Utils (
   NonEmptyVector(..)
   ) where
 
-import Data.CycleRoll.RSeqNode as RSeq
+import qualified Data.CycleRoll.Internal.RSequence.Node as RSeq
 
 import Control.Monad
 import Test.QuickCheck
@@ -28,7 +28,7 @@ instance (Arbitrary a, UV.Unbox a) => Arbitrary (NonEmptyVector a) where
 
 makeRSeqLeaf :: Int -> Int -> RSeq.Node
 makeRSeqLeaf n m =
-  Leaf q $ (n `div` q) - 1
+  RSeq.Leaf q $ (n `div` q) - 1
   where
     find_divisor n m 
       | m > n           = error "m must be <= n"
@@ -97,8 +97,8 @@ instance Arbitrary RSeqNodeWSz where
            combine p_rpt rpt = (rpt+1)*(p_rpt+1) - 1
            promote p_rpt (RSeq.Node rpt subs) = 
              RSeq.Node (p_rpt `combine` rpt) subs
-           promote p_rpt (Leaf sp rpt) = 
-             Leaf sp $ p_rpt `combine` rpt
+           promote p_rpt (RSeq.Leaf sp rpt) = 
+             RSeq.Leaf sp $ p_rpt `combine` rpt
 
       make 0 = fail "cant make rseqnode with 0 size"
       make 1 = makeRSeqLeafGen 1

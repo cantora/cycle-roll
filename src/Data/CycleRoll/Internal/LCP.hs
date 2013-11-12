@@ -1,10 +1,10 @@
-module Data.CycleRoll.LCP where
+module Data.CycleRoll.Internal.LCP where
 
 import Prelude hiding (
   null, head, tail, length, last, sum
   )
 
-import qualified Data.CycleRoll.SuffixArray as SA
+import qualified Data.CycleRoll.Internal.SuffixArray as SA
 
 import Data.Vector.Unboxed hiding (find, sum)
 import qualified Data.Vector.Primitive as PV

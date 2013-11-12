@@ -1,12 +1,12 @@
-module Data.CycleRoll.LCPTest (
+module Data.CycleRoll.Internal.LCPTest (
   group
   ) where
 
 import Prelude hiding (
   length, (++), null, head, tail
   )
-import qualified Data.CycleRoll.LCP as LCP
-import qualified Data.CycleRoll.SuffixArray as SA
+import qualified Data.CycleRoll.Internal.LCP as LCP
+import qualified Data.CycleRoll.Internal.SuffixArray as SA
 import Test.Utils
 
 import Data.Vector.Unboxed

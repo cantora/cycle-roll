@@ -9,11 +9,11 @@ import Data.Monoid (mempty)
 import Test.Framework.Providers.QuickCheck2
 import Test.Framework.Providers.HUnit
 
-import Data.CycleRoll.LCPTest as LCPTest
-import Data.CycleRoll.SuffixArrayTest as SATest
-import Data.CycleRoll.RSeqNodeTest as RSeqNodeTest
-import Data.CycleRoll.SubSeqTest as SubSeqTest
-import Data.CycleRoll.PrepareTest as PrepareTest
+import Data.CycleRoll.Internal.LCPTest as LCPTest
+import Data.CycleRoll.Internal.SuffixArrayTest as SATest
+import Data.CycleRoll.Internal.RSequence.NodeTest as RSeqNodeTest
+import Data.CycleRoll.Internal.SubSeqTest as SubSeqTest
+import Data.CycleRoll.Internal.PrepareTest as PrepareTest
 import Data.CycleRoll.Test as CycleRollTest
 
 main :: IO ()

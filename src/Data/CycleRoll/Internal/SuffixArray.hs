@@ -1,4 +1,4 @@
-module Data.CycleRoll.SuffixArray (
+module Data.CycleRoll.Internal.SuffixArray (
   make,
   entry,
   entry',

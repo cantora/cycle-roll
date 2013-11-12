@@ -2,7 +2,7 @@ module Data.CycleRoll.Test (
   group
   ) where
 
-import qualified Data.CycleRoll.SuffixArray as SA
+import qualified Data.CycleRoll.Internal.SuffixArray as SA
 
 import Data.Vector.Unboxed
 import Test.Framework
