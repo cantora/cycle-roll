@@ -4,7 +4,7 @@ import qualified Data.CycleRoll.Internal.LCP as LCP
 import qualified Data.CycleRoll.Internal.SuffixArray as SA
 import qualified Data.CycleRoll.Internal.Sequence as Seq
 import qualified Data.CycleRoll.Internal.Algorithm as Algorithm
-import qualified Data.CycleRoll.RSequence as RSequence
+import qualified Data.CycleRoll.Internal.RSequence as RSequence
 
 import System.Environment
 import Data.List

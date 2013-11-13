@@ -4,14 +4,16 @@ module Data.CycleRoll.RSequence (
   displayList
   ) where
 
-import qualified Data.CycleRoll.Internal.RSequence.Node as Node
 import Data.CycleRoll.Internal.RSequence (Root(..))
+import qualified Data.CycleRoll.Internal.RSequence as RSequence
+import Data.CycleRoll.Internal.Prepare (Input(..))
 
 import qualified Data.Vector.Unboxed as UV
-import Data.List
 
-display :: (Show a, UV.Unbox a) => UV.Vector a -> Root -> String
-display input (Root off node) = Node.display off input node
+display :: (Show a, UV.Unbox a) => Input a -> Root -> String
+display (ConstructInput input) =
+  RSequence.display input
 
-displayList :: (Show a, UV.Unbox a) => UV.Vector a -> [Root] -> String
-displayList input xs = intercalate ", " $ map (display input) xs
+displayList :: (Show a, UV.Unbox a) => Input a -> [Root] -> String
+displayList (ConstructInput input) =
+  RSequence.displayList input
