@@ -1,6 +1,15 @@
 
+SANDBOX_CONFIG = ./cabal.sandbox.config
 
-dist/setup-config:
+.PHONY: install
+install: dist/setup-config
+	cabal install
+
+$(SANDBOX_CONFIG):
+	cabal sandbox init
+	cabal install --force-reinstall --enable-tests --only-dependencies
+
+dist/setup-config: $(SANDBOX_CONFIG)
 	cabal configure --enable-tests
 
 .PHONY: build
